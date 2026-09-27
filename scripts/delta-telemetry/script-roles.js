@@ -4,6 +4,8 @@
  * Executar com usuário admin no banco 'admin'.
  */
 
+/* global db, use, print */
+
 use("admin");
 
 // 1. Service Account da API (Gravação do ESP32 e cálculo do resumo)

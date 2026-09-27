@@ -10,6 +10,8 @@
  *   mongosh atlas-connection-string --file script-collections.js
  */
 
+/* global db, use, print */
+
 // ============================================================================
 // DATABASE: db_delta_telemetry
 // ============================================================================
