@@ -10,7 +10,7 @@
  *   mongosh < script-seed.js
  */
 
-/* global db, use, print, NumberInt */
+/* global db, use, NumberInt */
 
 use("db_delta_app");
 

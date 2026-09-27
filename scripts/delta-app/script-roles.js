@@ -4,7 +4,7 @@
  * Executar com usuário admin no banco 'admin'.
  */
 
-/* global db, use, print */
+/* global db, use */
 
 use("admin");
 

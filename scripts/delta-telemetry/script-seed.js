@@ -10,7 +10,7 @@
  *   mongosh < script-seed.js
  */
 
-/* global db, use, print, NumberInt, NumberLong */
+/* global db, use, NumberInt, NumberLong */
 
 use("db_delta_telemetry");
 

@@ -10,7 +10,7 @@
  *   mongosh atlas-connection-string --file script-collections.js
  */
 
-/* global db, use, print */
+/* global db, use */
 
 // ============================================================================
 // DATABASE: db_delta_app

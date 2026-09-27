@@ -10,7 +10,7 @@
  *   mongosh < script-indexes.js
  */
 
-/* global db, use, print */
+/* global db, use */
 
 // ============================================================================
 // DATABASE: db_delta_telemetry
