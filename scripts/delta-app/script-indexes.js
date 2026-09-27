@@ -97,4 +97,36 @@ db.chat_feedback.createIndex(
 
 print("✓ Índice simples criado em chat_feedback (session_id)");
 
+// ─────────────────────────────────────────────────────────────────────────
+// Coleção: weather_daily
+// ─────────────────────────────────────────────────────────────────────────
+
+// Índice composto único: localização + data
+// Justificativa: Garante apenas um documento por localização em cada dia
+// e otimiza consultas históricas de clima por local e período.
+//
+// Padrão:
+// db.weather_daily.find({
+//   "location.latitude": -23.5505,
+//   "location.longitude": -46.6333,
+//   date: {
+//     $gte: new Date("2026-09-01T00:00:00Z"),
+//     $lte: new Date("2026-09-30T00:00:00Z")
+//   }
+// }).sort({ date: -1 })
+
+db.weather_daily.createIndex(
+  {
+    "location.latitude": 1,
+    "location.longitude": 1,
+    date: -1
+  },
+  {
+    unique: true,
+    name: "idx_location_date_unique"
+  }
+);
+
+print("✓ Índice único criado em weather_daily (location + date)");
+
 print("✅ Todos os índices foram criados com sucesso!");
