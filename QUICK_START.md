@@ -315,13 +315,3 @@ No Atlas UI → Monitoring:
 Atlas oferece backup automático. Para restore:
 
 Atlas UI → Backups → Restore a Snapshot → New Cluster/Existing
-
----
-
-## Próximos Passos
-
-- [ ] Conectar a API Node.js usando `script-collections.js` como referência
-- [ ] Testar com dados reais do ESP32
-- [ ] Configurar Databricks para extrair dados (`role_data_pipeline_reader`)
-- [ ] Monitorar Query Performance no Atlas
-- [ ] Implementar `chat_context` quando bot evoluir para LLM

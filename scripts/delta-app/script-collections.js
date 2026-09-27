@@ -10,6 +10,8 @@
  *   mongosh atlas-connection-string --file script-collections.js
  */
 
+/* global db, use */
+
 // ============================================================================
 // DATABASE: db_delta_app
 // ============================================================================
@@ -225,5 +227,167 @@ db.createCollection("chat_feedback", {
 });
 
 print("✓ Coleção 'chat_feedback' criada (db_delta_app)");
+
+// ─────────────────────────────────────────────────────────────────────────
+// Coleção: weather_daily
+// Descrição: Dados meteorológicos horários agrupados por dia e localização
+// Ciclo de vida: Permanente; fonte histórica da verdade para dados climáticos
+// ─────────────────────────────────────────────────────────────────────────
+
+db.createCollection("weather_daily", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: [
+        "location",
+        "date",
+        "hours",
+        "samples",
+        "created_at",
+        "updated_at"
+      ],
+      properties: {
+        _id: {
+          bsonType: "objectId"
+        },
+
+        location: {
+          bsonType: "object",
+          required: [
+            "city",
+            "state",
+            "country"
+          ],
+          properties: {
+            city: {
+              bsonType: "string",
+              description: "Cidade referente aos dados meteorológicos"
+            },
+            state: {
+              bsonType: "string",
+              description: "Estado ou unidade federativa da localização"
+            },
+            country: {
+              bsonType: "string",
+              description: "Código do país da localização"
+            }
+          }
+        },
+
+        date: {
+          bsonType: "date",
+          description: "Data de referência do documento, normalizada para o início do dia"
+        },
+
+        hours: {
+          bsonType: "array",
+          description: "Observações meteorológicas coletadas ao longo do dia",
+          maxItems: 24,
+          items: {
+            bsonType: "object",
+            required: [
+              "hour",
+              "observed_at",
+              "temperature_c",
+              "feels_like_c",
+              "humidity_percent",
+              "pressure_hpa",
+              "rain_mm",
+              "cloud_coverage_percent",
+              "wind_speed_m_s",
+              "condition"
+            ],
+            properties: {
+              hour: {
+                bsonType: "int",
+                minimum: 0,
+                maximum: 23,
+                description: "Hora da observação, entre 0 e 23"
+              },
+
+              observed_at: {
+                bsonType: "date",
+                description: "Timestamp correspondente à observação meteorológica"
+              },
+
+              temperature_c: {
+                bsonType: ["double", "int", "long", "decimal"],
+                description: "Temperatura observada em graus Celsius"
+              },
+
+              feels_like_c: {
+                bsonType: ["double", "int", "long", "decimal"],
+                description: "Sensação térmica em graus Celsius"
+              },
+
+              humidity_percent: {
+                bsonType: ["int", "long", "double", "decimal"],
+                minimum: 0,
+                maximum: 100,
+                description: "Umidade relativa do ar em percentual"
+              },
+
+              pressure_hpa: {
+                bsonType: ["int", "long", "double", "decimal"],
+                description: "Pressão atmosférica em hectopascais"
+              },
+
+              rain_mm: {
+                bsonType: ["double", "int", "long", "decimal"],
+                minimum: 0,
+                description: "Volume de chuva registrado em milímetros"
+              },
+
+              cloud_coverage_percent: {
+                bsonType: ["int", "long", "double", "decimal"],
+                minimum: 0,
+                maximum: 100,
+                description: "Percentual de cobertura de nuvens"
+              },
+
+              wind_speed_m_s: {
+                bsonType: ["double", "int", "long", "decimal"],
+                minimum: 0,
+                description: "Velocidade do vento em metros por segundo"
+              },
+
+              wind_gust_m_s: {
+                bsonType: ["double", "int", "long", "decimal", "null"],
+                minimum: 0,
+                description: "Velocidade das rajadas de vento em metros por segundo"
+              },
+
+              condition: {
+                bsonType: "string",
+                description: "Condição meteorológica principal da observação"
+              }
+            }
+          }
+        },
+
+        samples: {
+          bsonType: "int",
+          minimum: 0,
+          maximum: 24,
+          description: "Quantidade de observações horárias armazenadas no documento"
+        },
+
+        created_at: {
+          bsonType: "date",
+          description: "Timestamp de criação do documento diário"
+        },
+
+        updated_at: {
+          bsonType: "date",
+          description: "Timestamp da atualização mais recente do documento diário"
+        }
+      }
+    }
+  },
+
+  validationLevel: "moderate"
+});
+
+print("✓ Coleção 'weather_daily' criada (db_delta_app)");
 
 print("\n✅ Todas as coleções foram criadas com sucesso!");

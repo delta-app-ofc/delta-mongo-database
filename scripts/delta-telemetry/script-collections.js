@@ -10,6 +10,8 @@
  *   mongosh atlas-connection-string --file script-collections.js
  */
 
+/* global db, use */
+
 // ============================================================================
 // DATABASE: db_delta_telemetry
 // ============================================================================
@@ -159,6 +161,10 @@ db.createCollection("device_status", {
         unavailability_reason: { 
           bsonType: ["string", "null"],
           description: "Motivo do status offline/unstable"
+        },
+        battery_level: {
+          bsonType: ["int", "null"],
+          description: "Nível de bateria"
         }
       }
     }

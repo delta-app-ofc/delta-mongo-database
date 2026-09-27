@@ -10,6 +10,8 @@
  *   mongosh < script-indexes.js
  */
 
+/* global db, use */
+
 // ============================================================================
 // DATABASE: db_delta_app
 // ============================================================================
@@ -96,5 +98,39 @@ db.chat_feedback.createIndex(
 );
 
 print("✓ Índice simples criado em chat_feedback (session_id)");
+
+// ─────────────────────────────────────────────────────────────────────────
+// Coleção: weather_daily
+// ─────────────────────────────────────────────────────────────────────────
+
+// Índice composto único: país + estado + cidade + data
+// Justificativa: Garante apenas um documento diário por localização
+// e otimiza consultas históricas de clima por cidade e período.
+//
+// Padrão:
+// db.weather_daily.find({
+//   "location.country": "BR",
+//   "location.state": "SP",
+//   "location.city": "São Paulo",
+//   date: {
+//     $gte: new Date("2026-09-01T00:00:00Z"),
+//     $lte: new Date("2026-09-30T00:00:00Z")
+//   }
+// }).sort({ date: -1 })
+
+db.weather_daily.createIndex(
+  {
+    "location.country": 1,
+    "location.state": 1,
+    "location.city": 1,
+    date: -1
+  },
+  {
+    unique: true,
+    name: "idx_location_date_unique"
+  }
+);
+
+print("✓ Índice único criado em weather_daily (country + state + city + date)");
 
 print("✅ Todos os índices foram criados com sucesso!");

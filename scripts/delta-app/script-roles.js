@@ -4,6 +4,8 @@
  * Executar com usuário admin no banco 'admin'.
  */
 
+/* global db, use */
+
 use("admin");
 
 // 1. Service Account da API (CRUD total no App + Chatbot)
