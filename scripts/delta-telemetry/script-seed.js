@@ -79,7 +79,8 @@ db.device_status.insertMany([
     wifi_signal_rssi: "good",
     firmware_version: "v1.2.3",
     connectivity_status: "online",
-    unavailability_reason: null
+    unavailability_reason: null,
+    battery_level: 80
   },
   {
     device_id: "ESP32-SP-0913",
@@ -87,7 +88,8 @@ db.device_status.insertMany([
     wifi_signal_rssi: "weak",
     firmware_version: "v1.2.2",
     connectivity_status: "online",
-    unavailability_reason: null
+    unavailability_reason: null,
+    battery_level: 67
   }
 ]);
 
