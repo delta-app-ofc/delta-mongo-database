@@ -101,14 +101,15 @@ print("✓ Índice simples criado em chat_feedback (session_id)");
 // Coleção: weather_daily
 // ─────────────────────────────────────────────────────────────────────────
 
-// Índice composto único: localização + data
-// Justificativa: Garante apenas um documento por localização em cada dia
-// e otimiza consultas históricas de clima por local e período.
+// Índice composto único: país + estado + cidade + data
+// Justificativa: Garante apenas um documento diário por localização
+// e otimiza consultas históricas de clima por cidade e período.
 //
 // Padrão:
 // db.weather_daily.find({
-//   "location.latitude": -23.5505,
-//   "location.longitude": -46.6333,
+//   "location.country": "BR",
+//   "location.state": "SP",
+//   "location.city": "São Paulo",
 //   date: {
 //     $gte: new Date("2026-09-01T00:00:00Z"),
 //     $lte: new Date("2026-09-30T00:00:00Z")
@@ -117,8 +118,9 @@ print("✓ Índice simples criado em chat_feedback (session_id)");
 
 db.weather_daily.createIndex(
   {
-    "location.latitude": 1,
-    "location.longitude": 1,
+    "location.country": 1,
+    "location.state": 1,
+    "location.city": 1,
     date: -1
   },
   {
@@ -127,6 +129,6 @@ db.weather_daily.createIndex(
   }
 );
 
-print("✓ Índice único criado em weather_daily (location + date)");
+print("✓ Índice único criado em weather_daily (country + state + city + date)");
 
 print("✅ Todos os índices foram criados com sucesso!");

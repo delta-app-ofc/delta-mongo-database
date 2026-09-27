@@ -123,9 +123,7 @@ db.weather_daily.insertMany([
     location: {
       city: "São Paulo",
       state: "SP",
-      country: "BR",
-      latitude: -23.5505,
-      longitude: -46.6333
+      country: "BR"
     },
 
     date: new Date("2026-09-27T00:00:00Z"),
