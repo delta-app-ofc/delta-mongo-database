@@ -112,7 +112,7 @@ print("✓ Índice simples criado em chat_feedback (session_id)");
 //   "location.country": "BR",
 //   "location.state": "SP",
 //   "location.city": "São Paulo",
-//   date: {
+//   weather_date: {
 //     $gte: new Date("2026-09-01T00:00:00Z"),
 //     $lte: new Date("2026-09-30T00:00:00Z")
 //   }
