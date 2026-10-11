@@ -10,37 +10,14 @@
  *   mongosh < script-indexes.js
  */
 
+/* global db, use */
+
 // ============================================================================
 // DATABASE: db_delta_telemetry
 // ============================================================================
 
 use("db_delta_telemetry");
 
-// ─────────────────────────────────────────────────────────────────────────
-// Coleção: pulses_raw
-// ─────────────────────────────────────────────────────────────────────────
-
-// TTL Index: Expira documentos após 7 dias (604800 segundos)
-// Justificativa: pulses_raw é volátil por design; dados brutos são
-// processados pela IA e depois descartados. Armazenamento longo prazo
-// é responsabilidade do AWS S3/Delta Lake.
-db.pulses_raw.createIndex(
-  { sent_at: 1 },
-  { expireAfterSeconds: 604800, name: "ttl_7days" }
-);
-
-print("✓ Índice TTL criado em pulses_raw (7 dias)");
-
-// Índice composto: device_id + sent_at (descendente)
-// Justificativa: Suporta queries de debug/reprocessamento por dispositivo
-// dentro da janela de 7 dias em que o dado ainda existe.
-// Padrão: db.pulses_raw.find({ device_id: "ESP32-SP-0912" }).sort({ sent_at: -1 })
-db.pulses_raw.createIndex(
-  { device_id: 1, sent_at: -1 },
-  { name: "idx_device_sent_at_desc" }
-);
-
-print("✓ Índice composto criado em pulses_raw (device_id + sent_at)");
 
 // ─────────────────────────────────────────────────────────────────────────
 // Coleção: consumption_summary

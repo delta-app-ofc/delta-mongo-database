@@ -5,60 +5,8 @@ Banco de dados **operacional de alta carga** dedicado à ingestão de telemetria
 ## Características
 
 - **Padrão de carga**: Escrita pesada e constante (dispositivos enviam a cada 5–10 minutos)
-- **TTL/Expiração**: Dados brutos expiram em 7 dias (ver `pulses_raw`)
 - **Integrações**: Alimenta a IA em tempo real e o Databricks para análise histórica
 - **Usuários**: API Back-end (`role_api_service`), Databricks (`role_data_pipeline_reader`)
-
----
-
-## Coleção: `pulses_raw`
-
-### Descrição
-
-Recebe o payload **bruto e completo** do ESP32 a cada janela de tempo (5–10 minutos), incluindo o array detalhado de cada pulso magnético captado.
-
-### Ciclo de Vida
-
-- **Retenção**: 7 dias com TTL Index
-- **Propósito**: Alimentar a IA em tempo quase real; servir como janela de debug/auditoria curta
-- **Armazenamento longo prazo**: AWS S3 / Delta Lake (responsabilidade do Databricks)
-
-### Estrutura
-
-```json
-{
-  "_id": ObjectId("60c72b2f9b1d8b2bad723456"),
-  "device_id": "ESP32-SP-0912",
-  "sent_at": "2026-07-17T17:10:00Z",
-  "window_minutes": 5,
-  "total_pulses": 3,
-  "pulses": [
-    { "pulsed_at": "2026-07-17T17:05:12Z", "ms_since_boot": 3452210, "delta_ms": 0 },
-    { "pulsed_at": "2026-07-17T17:05:15Z", "ms_since_boot": 3453210, "delta_ms": 1000 },
-    { "pulsed_at": "2026-07-17T17:06:45Z", "ms_since_boot": 3545210, "delta_ms": 92000 }
-  ]
-}
-```
-
-### Índices
-
-| Nome | Tipo | Campos | Justificativa |
-|---|---|---|---|
-| `ttl_7days` | TTL | `sent_at` | Expira docs após 7 dias |
-| `idx_device_sent_at_desc` | Composto | `device_id`, `sent_at` DESC | Debug/reprocessamento |
-
-### Padrões de Query Esperados
-
-```javascript
-// IA: Buscar pulsos de um dispositivo na última hora para análise
-db.pulses_raw.find({
-  device_id: "ESP32-SP-0912",
-  sent_at: { $gte: new Date(Date.now() - 3600000) }
-}).sort({ sent_at: -1 });
-
-// Databricks: Extrair tudo para S3 antes de expirar
-db.pulses_raw.find({ sent_at: { $gte: ISODate("2026-07-10T00:00:00Z") } });
-```
 
 ---
 
@@ -66,7 +14,7 @@ db.pulses_raw.find({ sent_at: { $gte: ISODate("2026-07-10T00:00:00Z") } });
 
 ### Descrição
 
-Documento **consolidado e leve**, gerado logo após a IA processar o `pulses_raw`. Contém o resumo de consumo para cada janela de 5 minutos e **é a fonte oficial** que o app consulta para gráficos e histórico.
+Documento **consolidado e leve**, calculado pelo hardware e enviado diretamente para persistência em `consumption_summary`, sem etapa de armazenamento de pulsos brutos. Contém o resumo de consumo para cada janela de 5 minutos e **é a fonte oficial** que o app consulta para gráficos e histórico.
 
 ### Ciclo de Vida
 
@@ -88,6 +36,12 @@ Documento **consolidado e leve**, gerado logo após a IA processar o `pulses_raw
   "anomaly_detected": false
 }
 ```
+
+### Contrato de ingestão
+
+O validator exige `device_id` (string), `user_id` (int), `window_started_at` e `window_finished_at` (date), e `consumption_liters` (double). `lpm_average` (double) e `anomaly_detected` (bool) são opcionais. O hardware calcula o consumo; a API valida a identidade do dispositivo, associa o usuário e persiste a janela. A detecção de anomalias ocorre sobre os resumos e não é pré-requisito para a ingestão.
+
+As datas dos exemplos representam valores BSON date, não strings armazenadas. Para inserts em mongosh, use `ISODate`, `NumberInt` e `NumberDouble` conforme o tipo exigido. A duração de cinco minutos e a ordem entre início e fim são regras do produtor; o validator atual apenas verifica tipos e campos obrigatórios.
 
 ### Índices
 
@@ -171,17 +125,8 @@ db.device_status.updateOne(
 
 ---
 
-## Integração com Datab ricks / AWS S3
+## Integração histórica planejada
 
-Ao fim de cada dia (ex: 02:00 AM), o Databricks:
+Uma exportação para Databricks / AWS S3 pode ler as janelas de `consumption_summary` e gerar arquivos Parquet, tabelas Delta Lake e agregações para o PostgreSQL. O fluxo não depende de pulsos brutos nem de expiração em sete dias.
 
-1. Lê `consumption_summary` da última 24h
-2. Lê `pulses_raw` antes de expirar (7 dias)
-3. Exporta para AWS S3 em formato Parquet
-4. Cria tabelas Delta Lake (Bronze → Prata → Ouro)
-5. Envia agregações diárias para o PostgreSQL (`tb_last_water_bill`, `consumption_summary_daily`)
-
-Essa divisão garante:
-- ✅ MongoDB ágil e leve (sem carregar bilhões de registros)
-- ✅ S3/Delta Lake como repositório eterno de auditoria (barato)
-- ✅ PostgreSQL com dados mastigados para BI (rápido)
+Os scripts deste repositório não implementam esse pipeline. `consumption_summary` permanece sem TTL; exportar dados não remove o histórico operacional automaticamente.

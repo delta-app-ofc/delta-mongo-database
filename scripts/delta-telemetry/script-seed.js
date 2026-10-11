@@ -10,36 +10,9 @@
  *   mongosh < script-seed.js
  */
 
+/* global db, use, NumberInt, NumberLong */
+
 use("db_delta_telemetry");
-
-// ─────────────────────────────────────────────────────────────────────────
-// Seed: pulses_raw (dados de exemplo)
-// ─────────────────────────────────────────────────────────────────────────
-
-db.pulses_raw.insertMany([
-  {
-    device_id: "ESP32-SP-0912",
-    sent_at: new Date("2026-07-17T17:10:00Z"),
-    window_minutes: NumberInt(5),
-    total_pulses: NumberInt(3),
-    pulses: [
-      { pulsed_at: new Date("2026-07-17T17:05:12Z"), ms_since_boot: NumberLong(3452210), delta_ms: NumberInt(0) },
-      { pulsed_at: new Date("2026-07-17T17:05:15Z"), ms_since_boot: NumberLong(3453210), delta_ms: NumberInt(1000) },
-      { pulsed_at: new Date("2026-07-17T17:06:45Z"), ms_since_boot: NumberLong(3545210), delta_ms: NumberInt(92000) }
-    ]
-  },
-  {
-    device_id: "ESP32-SP-0913",
-    sent_at: new Date("2026-07-17T17:10:05Z"),
-    window_minutes: NumberInt(5),
-    total_pulses: NumberInt(1),
-    pulses: [
-      { pulsed_at: new Date("2026-07-17T17:07:30Z"), ms_since_boot: NumberLong(4050000), delta_ms: NumberInt(0) }
-    ]
-  }
-]);
-
-print("✓ 2 documentos inseridos em pulses_raw");
 
 // ─────────────────────────────────────────────────────────────────────────
 // Seed: consumption_summary
@@ -79,7 +52,8 @@ db.device_status.insertMany([
     wifi_signal_rssi: "good",
     firmware_version: "v1.2.3",
     connectivity_status: "online",
-    unavailability_reason: null
+    unavailability_reason: null,
+    battery_level: 80
   },
   {
     device_id: "ESP32-SP-0913",
@@ -87,7 +61,8 @@ db.device_status.insertMany([
     wifi_signal_rssi: "weak",
     firmware_version: "v1.2.2",
     connectivity_status: "online",
-    unavailability_reason: null
+    unavailability_reason: null,
+    battery_level: 67
   }
 ]);
 

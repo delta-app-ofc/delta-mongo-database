@@ -22,25 +22,28 @@ Guia rápido para configurar, testar e usar o MongoDB do Projeto Delta.
 # Execute em ordem:
 
 # 1️⃣  Criar as coleções com schema validation
-mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" < script-collections.js
+mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/delta-telemetry/script-collections.js
+mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/delta-app/script-collections.js
 
 # 2️⃣  Criar os índices (crítico para performance)
-mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" < script-indexes.js
+mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/delta-telemetry/script-indexes.js
+mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/delta-app/script-indexes.js
 
 # 3️⃣  Configurar Custom Roles (segurança)
-mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" < script-roles.js
+mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/delta-telemetry/script-roles.js
+mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/delta-app/script-roles.js
 ```
 
 ### 2.2 Inserir Dados de Teste (Opcional)
 
 ```bash
 # Para validar que tudo está funcionando:
-mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" < script-seed.js
+mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/delta-telemetry/script-seed.js
+mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/delta-app/script-seed.js
 
 # Depois, conecte ao Atlas UI e verifique:
-# - db_delta_telemetry.pulses_raw: 2 docs
 # - db_delta_telemetry.consumption_summary: 2 docs
-# - etc.
+# - db_delta_app.weather_daily: 1 doc
 ```
 
 ### 2.3 Criar Usuários (Manual via Atlas UI)
@@ -90,39 +93,29 @@ db.consumption_summary.getIndexes();
 ### 4.1 Exemplo: Ingerir Telemetria
 
 ```javascript
-const { MongoClient } = require("mongodb");
+const { MongoClient, Int32, Double } = require("mongodb");
 
 const client = new MongoClient(process.env.MONGO_TELEMETRY_URI);
 
-async function ingestPulses(espPacket) {
+async function ingestConsumption(espPacket, authenticatedUserId) {
   try {
     await client.connect();
     const db = client.db("db_delta_telemetry");
     
-    // 1. Salvar o bruto (TTL vai cuidar de expirar)
-    await db.collection("pulses_raw").insertOne({
-      device_id: espPacket.device_id,
-      sent_at: new Date(espPacket.sent_at),
-      window_minutes: espPacket.window_minutes,
-      total_pulses: espPacket.pulses.length,
-      pulses: espPacket.pulses // array com pulsed_at, ms_since_boot, delta_ms
-    });
-    
-    // 2. IA processa e gera resumo
-    const summary = await processWithAI(espPacket);
-    
-    // 3. Salvar resumo (permanente)
+    // O hardware já envia o consumo consolidado. O usuário vem da
+    // associação autenticada entre dispositivo e proprietário na API.
     await db.collection("consumption_summary").insertOne({
       device_id: espPacket.device_id,
-      user_id: summary.user_id,
-      window_started_at: new Date(summary.window_start),
-      window_finished_at: new Date(summary.window_end),
-      consumption_liters: summary.liters,
-      lpm_average: summary.avg_lpm,
-      anomaly_detected: summary.is_anomaly
+      user_id: new Int32(authenticatedUserId),
+      window_started_at: new Date(espPacket.window_started_at),
+      window_finished_at: new Date(espPacket.window_finished_at),
+      consumption_liters: new Double(espPacket.consumption_liters),
+      ...(espPacket.lpm_average !== undefined
+        ? { lpm_average: new Double(espPacket.lpm_average) }
+        : {})
     });
-    
-    // 4. Atualizar status do dispositivo
+
+    // Atualizar status do dispositivo
     await db.collection("device_status").updateOne(
       { device_id: espPacket.device_id },
       {
@@ -241,14 +234,12 @@ async function saveChatMessage(userId, message, sender = "user") {
 delta-nosql-database/
 ├── README.md                    # Visão geral
 ├── QUICK_START.md              # Este arquivo
-├── script-collections.js       # Criar coleções (executar 1º)
-├── script-indexes.js           # Criar índices (executar 2º)
-├── script-roles.js             # Criar Custom Roles (executar 3º)
-├── script-seed.js              # Dados de teste (opcional)
+├── scripts/
+│   ├── delta-telemetry/        # Coleções, índices, roles e seed de telemetria
+│   └── delta-app/              # Coleções, índices, roles e seed do aplicativo/clima
 ├── collections/
-│   ├── db_delta_telemetry.md   # Docs: pulses_raw, consumption_summary, device_status
-│   └── db_delta_app.md         # Docs: user_preferences, alerts_history, chat_sessions, chat_feedback
-└── indexes/                    # (Planejado) Scripts individuais por coleção
+│   ├── db_delta_telemetry.md   # Docs: consumption_summary, device_status
+│   └── db_delta_app.md         # Docs: preferências, alertas, chat, feedback e weather_daily
 ```
 
 ---
@@ -316,12 +307,8 @@ Atlas oferece backup automático. Para restore:
 
 Atlas UI → Backups → Restore a Snapshot → New Cluster/Existing
 
----
+## Contrato meteorológico atual
 
-## Próximos Passos
+`db_delta_app.weather_daily` usa `weather_date`, observações em `hours` e velocidade em `wind_speed_mps`. Consulte [campos, exemplo e consultas](collections/db_delta_app.md#coleção-weather_daily). O seed contém três observações em um documento. O índice `idx_location_date_unique` ainda usa `date`, divergindo do schema; precisa ser alinhado antes de depender da unicidade por dia.
 
-- [ ] Conectar a API Node.js usando `script-collections.js` como referência
-- [ ] Testar com dados reais do ESP32
-- [ ] Configurar Databricks para extrair dados (`role_data_pipeline_reader`)
-- [ ] Monitorar Query Performance no Atlas
-- [ ] Implementar `chat_context` quando bot evoluir para LLM
+Remover uma coleção do script não exclui a coleção nem seus dados de um banco já existente. Esta atualização documental não executa migrações nem altera o Atlas.

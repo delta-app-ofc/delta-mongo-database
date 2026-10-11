@@ -10,6 +10,8 @@
  *   mongosh < script-seed.js
  */
 
+/* global db, use, NumberInt */
+
 use("db_delta_app");
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -113,6 +115,74 @@ if (lastSession) {
 } else {
   print("⚠️  Aviso: chat_session não encontrada para seed de feedback");
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Seed: weather_daily (dados de exemplo)
+// ─────────────────────────────────────────────────────────────────────────
+
+db.weather_daily.insertMany([
+  {
+    location: {
+      city: "São Paulo",
+      state: "SP",
+      country: "BR"
+    },
+
+    weather_date: new Date("2026-09-27T00:00:00Z"),
+
+    hours: [
+      {
+        hour: NumberInt(0),
+        observed_at: new Date("2026-09-27T00:00:00Z"),
+
+        temperature_c: 18.2,
+        feels_like_c: 18.0,
+        humidity_percent: NumberInt(82),
+
+        rain_mm: 0.0,
+
+        wind_speed_mps: 2.1,
+
+        condition: "Clouds"
+      },
+      {
+        hour: NumberInt(1),
+        observed_at: new Date("2026-09-27T01:00:00Z"),
+
+        temperature_c: 17.9,
+        feels_like_c: 17.6,
+        humidity_percent: NumberInt(84),
+
+        rain_mm: 0.0,
+
+        wind_speed_mps: 1.9,
+
+        condition: "Clouds"
+      },
+      {
+        hour: NumberInt(2),
+        observed_at: new Date("2026-09-27T02:00:00Z"),
+
+        temperature_c: 17.5,
+        feels_like_c: 17.3,
+        humidity_percent: NumberInt(85),
+
+        rain_mm: 0.4,
+
+        wind_speed_mps: 1.7,
+
+        condition: "Rain"
+      }
+    ],
+
+    samples: NumberInt(3),
+
+    created_at: new Date("2026-09-27T00:01:00Z"),
+    updated_at: new Date("2026-09-27T02:01:00Z")
+  }
+]);
+
+print("✓ 1 documento inserido em weather_raw");
 
 // ─────────────────────────────────────────────────────────────────────────
 // RESUMO

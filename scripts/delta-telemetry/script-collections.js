@@ -10,69 +10,13 @@
  *   mongosh atlas-connection-string --file script-collections.js
  */
 
+/* global db, use */
+
 // ============================================================================
 // DATABASE: db_delta_telemetry
 // ============================================================================
 
 use("db_delta_telemetry");
-
-// ─────────────────────────────────────────────────────────────────────────
-// Coleção: pulses_raw
-// Descrição: Payload bruto do ESP32 com array detalhado de pulsos
-// Ciclo de vida: 7 dias com TTL Index
-// ─────────────────────────────────────────────────────────────────────────
-
-db.createCollection("pulses_raw", {
-  validator: {
-    $jsonSchema: {
-      bsonType: "object",
-      required: ["device_id", "sent_at", "total_pulses"],
-      properties: {
-        _id: { bsonType: "objectId" },
-        device_id: { 
-          bsonType: "string",
-          description: "Identificador único do dispositivo (ESP32/Arduino)"
-        },
-        sent_at: { 
-          bsonType: "date",
-          description: "Timestamp de envio do pacote"
-        },
-        window_minutes: { 
-          bsonType: "int",
-          description: "Duração da janela de coleta em minutos"
-        },
-        total_pulses: { 
-          bsonType: "int",
-          description: "Total de pulsos capturados na janela"
-        },
-        pulses: {
-          bsonType: "array",
-          description: "Array detalhado de cada pulso com timestamps e deltas",
-          items: {
-            bsonType: "object",
-            properties: {
-              pulsed_at: { 
-                bsonType: "date" ,
-                description: "Horário exato queo pulso foi disparado"
-              },
-              ms_since_boot: { 
-                bsonType: ["int", "long"],
-                description: "Tempo em milissegundos desde o início da captura pelo aparelho"
-              },
-              delta_ms: { 
-                bsonType: ["int", "long"],
-                description: "Tempo em milissegundos desde o último disparo"
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  validationLevel: "moderate"
-});
-
-print("✓ Coleção 'pulses_raw' criada (db_delta_telemetry)");
 
 // ─────────────────────────────────────────────────────────────────────────
 // Coleção: consumption_summary
@@ -159,6 +103,10 @@ db.createCollection("device_status", {
         unavailability_reason: { 
           bsonType: ["string", "null"],
           description: "Motivo do status offline/unstable"
+        },
+        battery_level: {
+          bsonType: ["int", "null"],
+          description: "Nível de bateria"
         }
       }
     }
