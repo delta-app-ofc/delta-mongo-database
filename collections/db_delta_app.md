@@ -1,6 +1,6 @@
 # Database: db_delta_app
 
-Banco de dados de **aplicação com carga leve** dedicado à experiência do usuário final: preferências, histórico de alertas, e chat de suporte.
+Banco de dados de **aplicação com carga leve** dedicado à experiência do usuário final: preferências, histórico de alertas, chat de suporte e histórico meteorológico diário.
 
 ## Características
 
@@ -289,6 +289,78 @@ db.chat_feedback.aggregate([
   }
 ]);
 ```
+
+---
+
+## Coleção: `weather_daily`
+
+Histórico meteorológico permanente em `db_delta_app`: um documento agrupa até 24 observações horárias por localização e dia. Não há TTL.
+
+### Campos do schema atual
+
+| Campo | Tipo BSON | Obrigatório | Regra |
+| --- | --- | --- | --- |
+| `_id` | objectId | Gerado pelo MongoDB | Identificador |
+| `location` | object | Sim | Exige `city`, `state` e `country`, todos string |
+| `weather_date` | date | Não | Data de referência normalizada para o início do dia |
+| `hours` | array de objetos | Sim | No máximo 24 itens; pode estar vazio |
+| `samples` | int | Sim | Entre 0 e 24 |
+| `created_at` | date | Sim | Criação do documento |
+| `updated_at` | date | Não | Última atualização |
+
+Todos os campos abaixo são obrigatórios em cada item de `hours`:
+
+| Campo | Tipo BSON | Regra |
+| --- | --- | --- |
+| `hour` | int | De 0 a 23 |
+| `observed_at` | date | Momento da observação |
+| `temperature_c` | double, int, long ou decimal | Temperatura em °C |
+| `feels_like_c` | double, int, long ou decimal | Sensação térmica em °C |
+| `humidity_percent` | int, long, double ou decimal | De 0 a 100 |
+| `rain_mm` | double, int, long ou decimal | Maior ou igual a zero |
+| `wind_speed_mps` | double, int, long ou decimal | Vento em m/s, maior ou igual a zero |
+| `condition` | string | Sem enum definido no validator |
+
+`date`, `wind_speed_m_s`, `wind_gust_m_s`, pressão, direção do vento e códigos meteorológicos não fazem parte dos campos definidos no schema atual. O validator não declara `additionalProperties: false`, portanto campos extras não são automaticamente rejeitados.
+
+O produtor deve manter `samples == hours.length`, evitar horas repetidas e alinhar `observed_at` ao dia de referência. Essas relações não são verificadas pelo `$jsonSchema` atual. O schema também não exige `weather_date` nem um mínimo de observações.
+
+### Exemplo para mongosh
+
+```javascript
+db.weather_daily.insertOne({
+  location: { city: "São Paulo", state: "SP", country: "BR" },
+  weather_date: ISODate("2026-09-27T00:00:00Z"),
+  hours: [{
+    hour: NumberInt(0),
+    observed_at: ISODate("2026-09-27T00:00:00Z"),
+    temperature_c: 18.2,
+    feels_like_c: 18.0,
+    humidity_percent: NumberInt(82),
+    rain_mm: 0.0,
+    wind_speed_mps: 2.1,
+    condition: "Clouds"
+  }],
+  samples: NumberInt(1),
+  created_at: ISODate("2026-09-27T00:01:00Z")
+});
+
+db.weather_daily.find({
+  "location.country": "BR",
+  "location.state": "SP",
+  "location.city": "São Paulo",
+  weather_date: {
+    $gte: ISODate("2026-09-01T00:00:00Z"),
+    $lt: ISODate("2026-10-01T00:00:00Z")
+  }
+}).sort({ weather_date: -1 });
+```
+
+### Índice: divergência pendente
+
+O script de índices ainda cria `idx_location_date_unique`, único, sobre `{ "location.country": 1, "location.state": 1, "location.city": 1, date: -1 }`. O schema e o seed usam `weather_date`. Portanto, o índice atual não garante unicidade por `weather_date`: documentos sem `date` para a mesma localização podem colidir no índice mesmo em dias diferentes.
+
+A intenção é garantir um documento por localização e dia, mas isso depende de alinhar o índice a `weather_date`. Esta atualização é documental e não modifica o script nem os índices de um banco existente.
 
 ---
 

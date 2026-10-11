@@ -31,12 +31,10 @@ compostos e índices parciais.
 
 Os scripts trabalham com dois bancos:
 
-- `db_delta_telemetry`: `pulses_raw`, `consumption_summary` e `device_status`;
-- `db_delta_app`: `user_preferences`, `alerts_history`, `chat_sessions` e `chat_feedback`.
+- `db_delta_telemetry`: `consumption_summary` e `device_status`;
+- `db_delta_app`: `user_preferences`, `alerts_history`, `chat_sessions`, `chat_feedback` e `weather_daily`.
 
-As coleções usam validação de schema com `validationLevel: "moderate"`. `pulses_raw` possui retenção de sete
-dias por meio do índice TTL `ttl_7days`; `consumption_summary` e as coleções da aplicação são permanentes na
-modelagem atual. `chat_sessions` usa mensagens embutidas no padrão Bucket.
+As coleções usam validação de schema com `validationLevel: "moderate"`. O hardware envia consumo consolidado diretamente para `consumption_summary`; a telemetria não possui TTL nos scripts atuais. `consumption_summary` e as coleções da aplicação, incluindo `weather_daily`, são permanentes na modelagem atual. O clima usa `weather_date` e `wind_speed_mps`; o índice ainda usa `date`, divergência registrada em `collections/db_delta_app.md`. `chat_sessions` usa mensagens embutidas no padrão Bucket.
 
 Este repositório não contém o backend, o frontend, o aplicativo mobile nem os agentes de IA. As referências de
 `user_id` e `device_id` entre MongoDB e PostgreSQL são lógicas; a integridade entre os bancos não é imposta por
