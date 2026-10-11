@@ -123,7 +123,7 @@ db.weather_daily.createIndex(
     "location.country": 1,
     "location.state": 1,
     "location.city": 1,
-    date: -1
+    weather_date: -1
   },
   {
     unique: true,
