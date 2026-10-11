@@ -240,11 +240,9 @@ db.createCollection("weather_daily", {
       bsonType: "object",
       required: [
         "location",
-        "date",
         "hours",
         "samples",
-        "created_at",
-        "updated_at"
+        "created_at"
       ],
       properties: {
         _id: {
@@ -274,7 +272,7 @@ db.createCollection("weather_daily", {
           }
         },
 
-        date: {
+        weather_date: {
           bsonType: "date",
           description: "Data de referência do documento, normalizada para o início do dia"
         },
@@ -291,10 +289,8 @@ db.createCollection("weather_daily", {
               "temperature_c",
               "feels_like_c",
               "humidity_percent",
-              "pressure_hpa",
               "rain_mm",
-              "cloud_coverage_percent",
-              "wind_speed_m_s",
+              "wind_speed_ms",
               "condition"
             ],
             properties: {
@@ -327,34 +323,16 @@ db.createCollection("weather_daily", {
                 description: "Umidade relativa do ar em percentual"
               },
 
-              pressure_hpa: {
-                bsonType: ["int", "long", "double", "decimal"],
-                description: "Pressão atmosférica em hectopascais"
-              },
-
               rain_mm: {
                 bsonType: ["double", "int", "long", "decimal"],
                 minimum: 0,
                 description: "Volume de chuva registrado em milímetros"
               },
 
-              cloud_coverage_percent: {
-                bsonType: ["int", "long", "double", "decimal"],
-                minimum: 0,
-                maximum: 100,
-                description: "Percentual de cobertura de nuvens"
-              },
-
-              wind_speed_m_s: {
+              wind_speed_ms: {
                 bsonType: ["double", "int", "long", "decimal"],
                 minimum: 0,
                 description: "Velocidade do vento em metros por segundo"
-              },
-
-              wind_gust_m_s: {
-                bsonType: ["double", "int", "long", "decimal", "null"],
-                minimum: 0,
-                description: "Velocidade das rajadas de vento em metros por segundo"
               },
 
               condition: {
