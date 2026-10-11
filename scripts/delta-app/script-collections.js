@@ -290,7 +290,7 @@ db.createCollection("weather_daily", {
               "feels_like_c",
               "humidity_percent",
               "rain_mm",
-              "wind_speed_ms",
+              "wind_speed_mps",
               "condition"
             ],
             properties: {
@@ -329,7 +329,7 @@ db.createCollection("weather_daily", {
                 description: "Volume de chuva registrado em milímetros"
               },
 
-              wind_speed_ms: {
+              wind_speed_mps: {
                 bsonType: ["double", "int", "long", "decimal"],
                 minimum: 0,
                 description: "Velocidade do vento em metros por segundo"
