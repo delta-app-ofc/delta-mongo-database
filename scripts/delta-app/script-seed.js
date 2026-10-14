@@ -125,7 +125,10 @@ db.weather_daily.insertMany([
     location: {
       city: "São Paulo",
       state: "SP",
-      country: "BR"
+      country: "BR",
+      // Ponto de exemplo aproximado; não é geolocalização de um imóvel.
+      latitude: -23.55,
+      longitude: -46.63
     },
 
     weather_date: new Date("2026-09-27T00:00:00Z"),
@@ -182,7 +185,7 @@ db.weather_daily.insertMany([
   }
 ]);
 
-print("✓ 1 documento inserido em weather_raw");
+print("✓ 1 documento inserido em weather_daily");
 
 // ─────────────────────────────────────────────────────────────────────────
 // RESUMO

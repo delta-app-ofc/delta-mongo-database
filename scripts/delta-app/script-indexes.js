@@ -116,7 +116,7 @@ print("✓ Índice simples criado em chat_feedback (session_id)");
 //     $gte: new Date("2026-09-01T00:00:00Z"),
 //     $lte: new Date("2026-09-30T00:00:00Z")
 //   }
-// }).sort({ date: -1 })
+// }).sort({ weather_date: -1 })
 
 db.weather_daily.createIndex(
   {
@@ -131,6 +131,22 @@ db.weather_daily.createIndex(
   }
 );
 
-print("✓ Índice único criado em weather_daily (country + state + city + date)");
+print("✓ Índice único criado em weather_daily (country + state + city + weather_date)");
+
+// Consultas por coordenadas numéricas e período. Não é índice 2dsphere:
+// latitude/longitude são campos separados, não uma geometria GeoJSON.
+// O par é opcional; documentos históricos sem coordenadas ficam fora do índice.
+db.weather_daily.createIndex(
+  { "location.latitude": 1, "location.longitude": 1, weather_date: -1 },
+  {
+    name: "idx_weather_coordinates_date",
+    partialFilterExpression: {
+      "location.latitude": { $type: "number" },
+      "location.longitude": { $type: "number" }
+    }
+  }
+);
+
+print("✓ Índice parcial criado em weather_daily (latitude + longitude + weather_date)");
 
 print("✅ Todos os índices foram criados com sucesso!");

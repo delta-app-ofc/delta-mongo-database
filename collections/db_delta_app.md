@@ -302,6 +302,8 @@ Histórico meteorológico permanente em `db_delta_app`: um documento agrupa até
 | --- | --- | --- | --- |
 | `_id` | objectId | Gerado pelo MongoDB | Identificador |
 | `location` | object | Sim | Exige `city`, `state` e `country`, todos string |
+| `location.latitude` | double, int, long ou decimal | Não | Latitude WGS84, de −90 a 90; exige longitude |
+| `location.longitude` | double, int, long ou decimal | Não | Longitude WGS84, de −180 a 180; exige latitude |
 | `weather_date` | date | Não | Data de referência normalizada para o início do dia |
 | `hours` | array de objetos | Sim | No máximo 24 itens; pode estar vazio |
 | `samples` | int | Sim | Entre 0 e 24 |
@@ -329,7 +331,7 @@ O produtor deve manter `samples == hours.length`, evitar horas repetidas e alinh
 
 ```javascript
 db.weather_daily.insertOne({
-  location: { city: "São Paulo", state: "SP", country: "BR" },
+  location: { city: "São Paulo", state: "SP", country: "BR", latitude: -23.55, longitude: -46.63 },
   weather_date: ISODate("2026-09-27T00:00:00Z"),
   hours: [{
     hour: NumberInt(0),
@@ -356,11 +358,15 @@ db.weather_daily.find({
 }).sort({ weather_date: -1 });
 ```
 
-### Índice: divergência pendente
+### Coordenadas e índices
 
-O script de índices ainda cria `idx_location_date_unique`, único, sobre `{ "location.country": 1, "location.state": 1, "location.city": 1, date: -1 }`. O schema e o seed usam `weather_date`. Portanto, o índice atual não garante unicidade por `weather_date`: documentos sem `date` para a mesma localização podem colidir no índice mesmo em dias diferentes.
+Latitude e longitude são opcionais para manter documentos históricos válidos. Quando uma delas é enviada, a outra também é exigida, sem aceitar null/string ou valores fora dos limites. Não preencha coordenadas desconhecidas com zero. A API deve fornecer o ponto consultado para o clima; não se trata automaticamente do endereço de cada imóvel. O ponto do exemplo/seed é aproximado e ilustrativo.
 
-A intenção é garantir um documento por localização e dia, mas isso depende de alinhar o índice a `weather_date`. Esta atualização é documental e não modifica o script nem os índices de um banco existente.
+`idx_location_date_unique` permanece único sobre país + estado + cidade + `weather_date`: o grão não muda para um documento por coordenada. O índice numérico parcial `idx_weather_coordinates_date` usa latitude + longitude + `weather_date` e inclui somente pares numéricos. Não é um índice 2dsphere; esses campos não são GeoJSON.
+
+Para uma coleção existente, execute somente [script-weather-location-update.js](../scripts/delta-app/script-weather-location-update.js) no mongosh integrado do Compass, conectado ao cluster do app. O script usa `collMod`, preserva o restante do validator e os níveis/ação de validação existentes, e cria o índice de coordenadas. Não insere seed, não altera documentos e não recria a coleção. É reexecutável; exige permissão para collMod/createIndex. Documentos históricos sem coordenadas permanecem sem elas.
+
+Os scripts atuais usam `weather_date`; bancos antigos com um índice legado em `date` precisam de revisão separada. Esta migração não apaga/substitui índices preexistentes nem altera o Atlas automaticamente.
 
 ---
 

@@ -256,6 +256,10 @@ db.createCollection("weather_daily", {
             "state",
             "country"
           ],
+          dependencies: {
+            latitude: ["longitude"],
+            longitude: ["latitude"]
+          },
           properties: {
             city: {
               bsonType: "string",
@@ -268,6 +272,18 @@ db.createCollection("weather_daily", {
             country: {
               bsonType: "string",
               description: "Código do país da localização"
+            },
+            latitude: {
+              bsonType: ["double", "int", "long", "decimal"],
+              minimum: -90,
+              maximum: 90,
+              description: "Latitude WGS84 do ponto consultado pela API de clima; informar junto com longitude"
+            },
+            longitude: {
+              bsonType: ["double", "int", "long", "decimal"],
+              minimum: -180,
+              maximum: 180,
+              description: "Longitude WGS84 do ponto consultado pela API de clima; informar junto com latitude"
             }
           }
         },

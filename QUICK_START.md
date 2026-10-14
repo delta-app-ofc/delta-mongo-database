@@ -309,6 +309,6 @@ Atlas UI → Backups → Restore a Snapshot → New Cluster/Existing
 
 ## Contrato meteorológico atual
 
-`db_delta_app.weather_daily` usa `weather_date`, observações em `hours` e velocidade em `wind_speed_mps`. Consulte [campos, exemplo e consultas](collections/db_delta_app.md#coleção-weather_daily). O seed contém três observações em um documento. O índice `idx_location_date_unique` ainda usa `date`, divergindo do schema; precisa ser alinhado antes de depender da unicidade por dia.
+`db_delta_app.weather_daily` usa `weather_date`, observações em `hours` e velocidade em `wind_speed_mps`. Consulte [campos, exemplo e consultas](collections/db_delta_app.md#coleção-weather_daily). O seed contém três observações em um documento. O índice `idx_location_date_unique` usa `weather_date`. O par opcional `location.latitude`/`location.longitude` aceita coordenadas numéricas válidas. Para atualizar uma coleção existente, cole [script-weather-location-update.js](scripts/delta-app/script-weather-location-update.js) no mongosh integrado do Compass. Não rode novamente o seed para migrar o schema.
 
 Remover uma coleção do script não exclui a coleção nem seus dados de um banco já existente. Esta atualização documental não executa migrações nem altera o Atlas.
