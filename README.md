@@ -17,4 +17,5 @@ Scripts de criação e configuração das coleções MongoDB do Projeto Delta.
 
 Consulte [telemetria](collections/db_delta_telemetry.md), [aplicativo e clima](collections/db_delta_app.md) e [Quick Start](QUICK_START.md).
 
-**Pendência conhecida:** o índice único de `weather_daily` ainda aponta para `date`, enquanto o schema e o seed usam `weather_date`. A documentação registra essa divergência; os scripts não foram alterados nesta atualização.
+O script atual do índice único de `weather_daily` usa `weather_date`, conforme o schema.
+Consulte [DOCKER-HELP.md](DOCKER-HELP.md) para usar o ambiente Docker local.
