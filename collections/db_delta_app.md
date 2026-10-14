@@ -364,6 +364,21 @@ Latitude e longitude são opcionais para manter documentos históricos válidos.
 
 `idx_location_date_unique` permanece único sobre país + estado + cidade + `weather_date`: o grão não muda para um documento por coordenada. O índice numérico parcial `idx_weather_coordinates_date` usa latitude + longitude + `weather_date` e inclui somente pares numéricos. Não é um índice 2dsphere; esses campos não são GeoJSON.
 
+| Nome | Tipo | Campos |
+| --- | --- | --- |
+| `idx_location_date_unique` | Único composto | `location.country`, `location.state`, `location.city`, `weather_date` DESC |
+| `idx_weather_coordinates_date` | Composto parcial, não único | `location.latitude`, `location.longitude`, `weather_date` DESC; somente coordenadas numéricas |
+
+### Uso nas camadas analíticas
+
+Na leitura da origem, use `weather_date` como data do documento e `hours.wind_speed_mps` como velocidade do vento. Os nomes legados `date` e `wind_speed_m_s` não devem substituir esses campos nos pipelines atuais.
+
+Quando disponíveis, preserve `location.latitude` e `location.longitude` na Bronze e projete-as como `latitude` e `longitude` na Silver diária e horária. Nos documentos históricos sem coordenadas, mantenha os valores nulos; não invente um ponto nem preencha com zero. Esta orientação não comprova que os jobs Glue já foram atualizados: confira a projeção de campos no script efetivamente executado.
+
+Para comparar temperatura e sensação térmica, use o mesmo `hours.observed_at` e calcule a diferença como `feels_like_c - temperature_c`, em °C. As coordenadas identificam o ponto consultado pela API, mas não estabelecem um vínculo automático com `property_id` no PostgreSQL.
+
+### Atualização de uma coleção existente
+
 Para uma coleção existente, execute somente [script-weather-location-update.js](../scripts/delta-app/script-weather-location-update.js) no mongosh integrado do Compass, conectado ao cluster do app. O script usa `collMod`, preserva o restante do validator e os níveis/ação de validação existentes, e cria o índice de coordenadas. Não insere seed, não altera documentos e não recria a coleção. É reexecutável; exige permissão para collMod/createIndex. Documentos históricos sem coordenadas permanecem sem elas.
 
 Os scripts atuais usam `weather_date`; bancos antigos com um índice legado em `date` precisam de revisão separada. Esta migração não apaga/substitui índices preexistentes nem altera o Atlas automaticamente.
