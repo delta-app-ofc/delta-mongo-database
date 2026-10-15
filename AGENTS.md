@@ -59,10 +59,13 @@ delta-nosql-database/
 ├── .github/
 │   └── workflows/
 │       └── trigger_actions.yml
+├── docker-compose.test.yml
+├── DOCKER-HELP.md
 ├── collections/
 │   ├── db_delta_app.md
 │   └── db_delta_telemetry.md
 ├── scripts/
+│   ├── script-bi-metrics-update.js
 │   ├── delta-app/
 │   │   ├── script-collections.js
 │   │   ├── script-indexes.js
@@ -73,6 +76,9 @@ delta-nosql-database/
 │       ├── script-indexes.js
 │       ├── script-roles.js
 │       └── script-seed.js
+├── tests/
+│   ├── bi-metrics-contract.cjs
+│   └── smoke.js
 ├── QUICK_START.md
 └── README.md
 ```
@@ -85,6 +91,9 @@ Responsabilidades dos arquivos:
 - `script-seed.js`: insere dados de desenvolvimento para validação e não deve ser executado em produção;
 - `collections/*.md`: documenta estrutura, ciclo de vida, índices e consultas esperadas das coleções;
 - `trigger_actions.yml`: chama o workflow reutilizável da organização para as verificações de Pull Request.
+- `script-bi-metrics-update.js`: atualização manual dos validadores de chat/status, sem modificar documentos.
+- `tests/bi-metrics-contract.cjs`: verificação estrutural local, sem banco; `tests/smoke.js`: validação no MongoDB
+  isolado do Compose. `DOCKER-HELP.md` documenta a execução local.
 
 Para configurar cada banco a partir do zero, preserve a ordem existente: coleções, índices e roles; execute o
 seed somente quando a tarefa pedir dados de desenvolvimento. Leia o conteúdo real dos scripts antes de mudar

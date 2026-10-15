@@ -158,6 +158,11 @@ db.createCollection("chat_sessions", {
           items: {
             bsonType: "object",
             required: ["role", "content_type", "content", "api_status_code"],
+            dependencies: {
+              agent_name: ["response_time_ms", "response_time_is_mock"],
+              response_time_ms: ["agent_name", "response_time_is_mock"],
+              response_time_is_mock: ["agent_name", "response_time_ms"]
+            },
             properties: {
               role: {
                 enum: ["user", "bot"],
@@ -179,6 +184,20 @@ db.createCollection("chat_sessions", {
               api_status_code: {
                 bsonType: "int",
                 description: "Código do status enviado pela API"
+              },
+              agent_name: {
+                bsonType: "string",
+                minLength: 1,
+                description: "Especialista responsável pela resposta, sem incluir juiz ou roteador"
+              },
+              response_time_ms: {
+                bsonType: ["int", "long"],
+                minimum: 0,
+                description: "Duração da execução do especialista em milissegundos, medida pelo backend"
+              },
+              response_time_is_mock: {
+                bsonType: "bool",
+                description: "true para duração simulada; false para medição real do backend"
               }
             }
           }

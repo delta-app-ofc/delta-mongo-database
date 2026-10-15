@@ -87,7 +87,11 @@ db.chat_sessions.insertMany([
         content_type: "text",
         content: "Identifiquei um fluxo contínuo de 2.8 LPM de madrugada. Pode ser um vazamento.",
         sent_at: new Date("2026-07-17T14:00:12Z"),
-        api_status_code: NumberInt(200)
+        api_status_code: NumberInt(200),
+        // Exemplo simulado: não representa tempo medido no backend.
+        agent_name: "leak",
+        response_time_ms: NumberInt(1800),
+        response_time_is_mock: true
       }
     ]
   }

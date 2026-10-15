@@ -167,7 +167,10 @@ Cada documento pode ter no máximo **50–100 mensagens**. Ao atingir o limite, 
       "content_type": "text",
       "content": "Identifiquei um fluxo contínuo de 2.8 LPM de madrugada. Pode ser um vazamento.",
       "sent_at": "2026-07-17T14:00:12Z",
-      "api_status_code": 200
+      "api_status_code": 200,
+      "agent_name": "leak",
+      "response_time_ms": 1800,
+      "response_time_is_mock": true
     }
   ]
 }
@@ -204,11 +207,46 @@ db.chat_sessions.findOne({
 db.chat_sessions.updateOne(
   { _id: ObjectId("...") },
   {
-    $push: { messages: { role: "bot", text: "...", sent_at: new Date(), api_status_code: 200 } },
+    $push: { messages: {
+      role: "bot", content_type: "text", content: "...", sent_at: new Date(),
+      api_status_code: NumberInt(200), agent_name: "leak",
+      response_time_ms: NumberLong(1800), response_time_is_mock: true
+    } },
     $set: { last_activity_at: new Date() }
   }
 );
 ```
+
+### Agente e tempo de resposta
+
+Os campos `agent_name`, `response_time_ms` e `response_time_is_mock` são opcionais para
+mensagens antigas. Quando qualquer um é informado, os três são exigidos juntos.
+`response_time_ms` aceita BSON int/long não negativo, em milissegundos inteiros.
+`agent_name` é uma string não vazia com o nome estável do especialista (ex.: `leak`,
+`consumption`, `forecast`). Novos nomes não exigem alterar um enum no banco.
+
+O backend deverá preencher esses campos na mensagem do bot e medir somente a execução
+do especialista, incluindo suas ferramentas e tentativas internas, sem o juiz e o roteador.
+Não usar o intervalo entre mensagens de usuário e bot como essa duração. Este contrato
+registra um especialista por mensagem, não cada chamada interna ao provedor de LLM.
+Caso uma resposta reúna vários especialistas, será necessário um contrato por execução.
+A aplicação é responsável por essa semântica; o validator verifica tipos e dependências.
+
+A seed e o exemplo acima usam `response_time_is_mock: true`. A medição real deverá usar
+`false`; registros sem esses campos são desconhecidos, não respostas instantâneas.
+O cálculo real pelo backend ainda não foi implementado. A média, o p90 e o boxplot devem
+usar durações individuais, filtradas por especialista, sem misturar mocks e medições reais.
+Mantenha sucessos e falhas separados ao comparar latência.
+
+Para falhas técnicas, reutilize `api_status_code` nas mensagens do bot: códigos 400–599
+representam respostas HTTP com erro. Isso não comprova uma resposta incorreta nem uma
+reprovação pelo juiz. Falhas que não gerarem mensagem persistida não serão contabilizadas;
+o backend deve registrá-las. A avaliação do juiz continua sem campo próprio neste contrato.
+
+Coleções existentes podem receber os novos campos com
+[`scripts/script-bi-metrics-update.js`](../scripts/script-bi-metrics-update.js), executado
+manualmente no mongosh do Compass. Ele preserva os demais campos do validator e suas
+opções de validação; não insere mocks nem preenche mensagens históricas.
 
 ### Reabertura de Sessão
 

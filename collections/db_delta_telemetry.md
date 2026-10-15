@@ -95,7 +95,20 @@ Um **único documento por dispositivo**, atualizado via *upsert* a cada ping. Re
   "wifi_signal_rssi": "good",
   "firmware_version": "v1.2.3",
   "connectivity_status": "online",
-  "unavailability_reason": null
+  "unavailability_reason": null,
+  "battery_level": 80,
+  "availability_started_at": ISODate("2026-07-16T17:10:00Z"),
+  "availability_updated_at": ISODate("2026-07-17T17:10:00Z"),
+  "available_seconds": NumberLong(85800),
+  "availability_is_mock": true,
+  "unavailabilities": [
+    {
+      "started_at": ISODate("2026-07-17T10:00:00Z"),
+      "ended_at": ISODate("2026-07-17T10:10:00Z"),
+      "unavailable_seconds": NumberLong(600),
+      "unavailability_reason": "Perda de conexão Wi-Fi"
+    }
+  ]
 }
 ```
 
@@ -124,6 +137,56 @@ db.device_status.updateOne(
 ```
 
 ---
+
+## Disponibilidade e indisponibilidades
+
+O grupo `availability_started_at`, `availability_updated_at`, `available_seconds`,
+`availability_is_mock` e `unavailabilities` é opcional para compatibilidade. Informar
+qualquer um exige o grupo completo. Tempos em segundos aceitam BSON int/long não negativo;
+as datas são BSON date. A seed contém exemplos simulados, inclusive um intervalo aberto.
+O contador real deverá ser mantido pelo backend; ele não é calculado pelos scripts MongoDB.
+
+- `availability_started_at`: início da observação. Não preencher com a instalação se não
+  existir histórico completo desde aquele instante.
+- `availability_updated_at`: corte até o qual todos os tempos foram atualizados. Não confundir
+  com `last_ping_at`, que pode estar antigo durante uma indisponibilidade.
+- `available_seconds`: tempo comprovadamente online entre início e corte.
+- `unavailabilities`: intervalos fechados ou uma única ocorrência ainda aberta (`ended_at: null`).
+  Cada duração é calculada até seu fim ou, se aberta, até `availability_updated_at`.
+- `unavailability_reason` externo: motivo atual; dentro do array: motivo histórico de cada evento.
+  O motivo histórico permanece mesmo após o dispositivo voltar a ficar online.
+- `availability_is_mock`: `true` para simulação e `false` para contagem real.
+
+Para o período inteiro coberto, a disponibilidade é
+`100 × available_seconds / (available_seconds + soma(unavailable_seconds))`.
+No exemplo, `100 × 85800 / 86400 = 99,31%`. Denominador zero ou histórico ausente produz
+resultado desconhecido, não 0% ou 100%. A média entre dispositivos usa seus percentuais
+individuais; não confundir com a taxa ponderada pelo tempo de observação.
+
+Para filtrar dia/mês, a Gold deverá recortar os intervalos pela interseção com o período,
+limitado a `[availability_started_at, availability_updated_at)`. Somente com histórico completo
+o tempo disponível do recorte pode ser obtido pelo tempo observado menos as indisponibilidades.
+O backend precisa definir o prazo de ausência de ping que abre uma indisponibilidade e tratar
+`unstable` explicitamente. Falta de observação não prova tempo online nem offline.
+Se houver lacunas sem classificação, não publicar disponibilidade para aquele recorte.
+
+Regras do backend: início anterior ou igual ao fim/corte; intervalos dentro da observação,
+ordenados e sem sobreposição; no máximo um intervalo aberto; total disponível + indisponível
+igual à duração observada para um histórico completo. Atualizar estado, contador, corte e
+array juntos, de forma idempotente, sem somar novamente o mesmo intervalo em pings repetidos.
+Fechar o intervalo aberto ao reconectar. Não zerar o contador sem iniciar um novo período
+explicitamente e preservar o histórico anterior para BI. Essas relações temporais não são
+impostas pelo `$jsonSchema`, que valida tipos, não a soma entre campos.
+
+O array embutido atende ao contrato inicial. Deve haver acompanhamento do crescimento do
+documento e arquivamento dos intervalos antes de exceder o limite de documento do MongoDB;
+remover eventos antigos sem preservá-los invalidaria os filtros históricos.
+
+Para coleções existentes, execute manualmente no mongosh do Compass
+[`scripts/script-bi-metrics-update.js`](../scripts/script-bi-metrics-update.js).
+Ele atualiza somente os validadores de chat e status; não altera documentos nem inicializa
+contadores antigos com zero. As duas alterações não formam uma transação; após falha, corrija
+a causa e reexecute. Bronze/Silver/Gold ainda precisam propagar e consumir os novos campos.
 
 ## Integração histórica planejada
 

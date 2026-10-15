@@ -53,16 +53,42 @@ db.device_status.insertMany([
     firmware_version: "v1.2.3",
     connectivity_status: "online",
     unavailability_reason: null,
-    battery_level: 80
+    battery_level: 80,
+    // Histórico simulado de 24 horas: 85.800 s online + 600 s offline.
+    availability_started_at: new Date("2026-07-16T17:10:00Z"),
+    availability_updated_at: new Date("2026-07-17T17:10:00Z"),
+    available_seconds: NumberLong(85800),
+    availability_is_mock: true,
+    unavailabilities: [
+      {
+        started_at: new Date("2026-07-17T10:00:00Z"),
+        ended_at: new Date("2026-07-17T10:10:00Z"),
+        unavailable_seconds: NumberLong(600),
+        unavailability_reason: "Perda de conexão Wi-Fi"
+      }
+    ]
   },
   {
     device_id: "ESP32-SP-0913",
-    last_ping_at: new Date("2026-07-17T17:09:50Z"),
+    last_ping_at: new Date("2026-07-17T17:00:00Z"),
     wifi_signal_rssi: "weak",
     firmware_version: "v1.2.2",
-    connectivity_status: "online",
-    unavailability_reason: null,
-    battery_level: 67
+    connectivity_status: "offline",
+    unavailability_reason: "Sem alimentação elétrica",
+    battery_level: 67,
+    // Intervalo aberto: os segundos estão atualizados somente até 17:10Z.
+    availability_started_at: new Date("2026-07-16T17:10:00Z"),
+    availability_updated_at: new Date("2026-07-17T17:10:00Z"),
+    available_seconds: NumberLong(85800),
+    availability_is_mock: true,
+    unavailabilities: [
+      {
+        started_at: new Date("2026-07-17T17:00:00Z"),
+        ended_at: null,
+        unavailable_seconds: NumberLong(600),
+        unavailability_reason: "Sem alimentação elétrica"
+      }
+    ]
   }
 ]);
 

@@ -78,6 +78,13 @@ db.createCollection("device_status", {
     $jsonSchema: {
       bsonType: "object",
       required: ["device_id"],
+      dependencies: {
+        available_seconds: ["availability_started_at", "availability_updated_at", "unavailabilities", "availability_is_mock"],
+        availability_started_at: ["available_seconds"],
+        availability_updated_at: ["available_seconds"],
+        unavailabilities: ["available_seconds"],
+        availability_is_mock: ["available_seconds"]
+      },
       properties: {
         _id: { bsonType: "objectId" },
         device_id: { 
@@ -107,6 +114,47 @@ db.createCollection("device_status", {
         battery_level: {
           bsonType: ["int", "null"],
           description: "Nível de bateria"
+        },
+        availability_started_at: {
+          bsonType: "date",
+          description: "Início do período coberto pelo contador e pelas indisponibilidades"
+        },
+        availability_updated_at: {
+          bsonType: "date",
+          description: "Instante até o qual os tempos foram contabilizados pelo backend"
+        },
+        available_seconds: {
+          bsonType: ["int", "long"],
+          minimum: 0,
+          description: "Tempo online acumulado, em segundos, no período de disponibilidade"
+        },
+        availability_is_mock: {
+          bsonType: "bool",
+          description: "true para histórico simulado; false para contagem real do backend"
+        },
+        unavailabilities: {
+          bsonType: "array",
+          description: "Intervalos de indisponibilidade contabilizados no mesmo período",
+          items: {
+            bsonType: "object",
+            required: ["started_at", "ended_at", "unavailable_seconds", "unavailability_reason"],
+            properties: {
+              started_at: { bsonType: "date" },
+              ended_at: {
+                bsonType: ["date", "null"],
+                description: "null enquanto a indisponibilidade estiver aberta"
+              },
+              unavailable_seconds: {
+                bsonType: ["int", "long"],
+                minimum: 0,
+                description: "Segundos até ended_at, ou availability_updated_at quando aberta"
+              },
+              unavailability_reason: {
+                bsonType: ["string", "null"],
+                description: "Motivo do intervalo; null quando desconhecido"
+              }
+            }
+          }
         }
       }
     }

@@ -1,4 +1,4 @@
-/* global db, use, quit */
+/* global db, use, quit, print, NumberInt, NumberLong, ISODate */
 
 function fail(message) {
   print(`FAIL: ${message}`);
@@ -53,4 +53,56 @@ try {
 }
 assert(rejectedInvalidDocument, "user_preferences rejects a document with an invalid user_id type (code 121)");
 
+// Os grupos novos são opcionais para documentos antigos e completos quando presentes.
+function rejects(collection, document, description) {
+  let rejected = false;
+  try {
+    collection.insertOne(document);
+  } catch (error) {
+    rejected = error.code === 121;
+  }
+  assert(rejected, description + " (code 121)");
+}
+
+const chat = db.getCollection("chat_sessions");
+const legacyMessage = { role: "bot", content_type: "text", content: "Teste", api_status_code: NumberInt(200) };
+const response = Object.assign({}, legacyMessage, {
+  agent_name: "consumption", response_time_ms: NumberLong(1800), response_time_is_mock: true
+});
+function session(message) {
+  return { user_id: NumberInt(999001), started_at: new Date(), messages: [message] };
+}
+assert(chat.insertOne(session(legacyMessage)).acknowledged, "legacy messages remain accepted");
+assert(chat.insertOne(session(response)).acknowledged, "new response metrics are accepted");
+rejects(chat, session(Object.assign({}, response, { response_time_ms: NumberInt(-1) })), "negative response duration rejected");
+rejects(chat, session(Object.assign({}, response, { response_time_ms: "1800" })), "string response duration rejected");
+rejects(chat, session(Object.assign({}, legacyMessage, { agent_name: "consumption" })), "incomplete response metrics rejected");
+
+use("db_delta_telemetry");
+const status = db.getCollection("device_status");
+assert(status.insertOne({ device_id: "LEGACY-TEST" }).acknowledged, "legacy device remains accepted");
+const availability = {
+  device_id: "METRICS-TEST",
+  availability_started_at: ISODate("2026-07-17T00:00:00Z"),
+  availability_updated_at: ISODate("2026-07-17T01:00:00Z"),
+  available_seconds: NumberLong(3000),
+  availability_is_mock: true,
+  unavailabilities: [{
+    started_at: ISODate("2026-07-17T00:50:00Z"), ended_at: null,
+    unavailable_seconds: NumberLong(600), unavailability_reason: "Sem conexão"
+  }]
+};
+assert(status.insertOne(availability).acknowledged, "open unavailability accepted");
+rejects(status, Object.assign({}, availability, { device_id: "BAD-NEGATIVE", available_seconds: NumberInt(-1) }), "negative available duration rejected");
+rejects(status, { device_id: "BAD-PARTIAL", available_seconds: NumberInt(0) }, "incomplete availability rejected");
+rejects(status, Object.assign({}, availability, {
+  device_id: "BAD-EVENT",
+  unavailabilities: [{ started_at: new Date(), ended_at: null, unavailable_seconds: NumberInt(-1), unavailability_reason: null }]
+}), "negative unavailable duration rejected");
+rejects(status, Object.assign({}, availability, {
+  device_id: "BAD-REASON",
+  unavailabilities: [{ started_at: new Date(), ended_at: null, unavailable_seconds: NumberInt(0) }]
+}), "unavailability without reason field rejected");
+
+print("Response and availability metric checks passed.");
 print("MongoDB local smoke checks passed.");
