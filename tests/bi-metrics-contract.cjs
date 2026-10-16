@@ -35,13 +35,14 @@ for (const message of seeds.chat_sessions.flatMap(session => session.messages)) 
   } else {
     assert.ok(message.agent_name && !["judge", "router"].includes(message.agent_name));
     assert.ok(Number.isInteger(message.response_time_ms) && message.response_time_ms >= 0);
-    assert.equal(message.response_time_is_mock, true);
+    assert.equal(message.response_time_is_mock, undefined);
   }
 }
 assert.equal(seeds.device_status.length, 2);
 assert.ok(seeds.device_status.some(device => device.unavailabilities.some(event => event.ended_at === null)));
 for (const device of seeds.device_status) {
-  assert.equal(device.availability_is_mock, true);
+  assert.equal(device.availability_is_mock, undefined);
+  assert.equal(device.unavailability_reason, undefined);
   const start = device.availability_started_at;
   const cut = device.availability_updated_at;
   let previousEnd = start;
@@ -59,12 +60,15 @@ for (const device of seeds.device_status) {
 // Simula validadores antigos com regras extras que a migração deve preservar.
 const oldChat = plain(definitions.chat_sessions);
 const oldDevice = plain(definitions.device_status);
-const chatMetrics = ["agent_name", "response_time_ms", "response_time_is_mock"];
-const deviceMetrics = ["available_seconds", "availability_started_at", "availability_updated_at", "availability_is_mock", "unavailabilities"];
+const chatMetrics = ["agent_name", "response_time_ms"];
+const deviceMetrics = ["available_seconds", "availability_started_at", "availability_updated_at", "unavailabilities"];
 for (const key of chatMetrics) delete oldChat.properties.messages.items.properties[key];
 delete oldChat.properties.messages.items.dependencies;
 for (const key of deviceMetrics) delete oldDevice.properties[key];
 delete oldDevice.dependencies;
+oldChat.properties.messages.items.properties.response_time_is_mock = { bsonType: "bool" };
+oldDevice.properties.availability_is_mock = { bsonType: "bool" };
+oldDevice.properties.unavailability_reason = { bsonType: ["string", "null"] };
 oldChat.properties.custom_field = { bsonType: "string" };
 oldChat.properties.messages.items.dependencies = { custom_message: ["role"] };
 oldDevice.dependencies = { custom_device: ["device_id"] };
@@ -99,11 +103,14 @@ for (const command of commands) {
     assert.deepEqual(schema.properties.custom_field, { bsonType: "string" });
     assert.deepEqual(schema.properties.messages.items.dependencies.custom_message, ["role"]);
     for (const key of chatMetrics) assert.deepEqual(schema.properties.messages.items.dependencies[key], definitions.chat_sessions.properties.messages.items.dependencies[key]);
+    assert.equal(schema.properties.messages.items.properties.response_time_is_mock, undefined);
     assert.equal(command.validationLevel, "moderate");
   } else {
     for (const key of deviceMetrics) assert.deepEqual(schema.properties[key], definitions.device_status.properties[key]);
     assert.deepEqual(schema.dependencies.custom_device, ["device_id"]);
     for (const key of deviceMetrics) assert.deepEqual(schema.dependencies[key], definitions.device_status.dependencies[key]);
+    assert.equal(schema.properties.availability_is_mock, undefined);
+    assert.equal(schema.properties.unavailability_reason, undefined);
     assert.equal(command.validationAction, "warn");
   }
 }

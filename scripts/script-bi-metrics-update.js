@@ -18,24 +18,14 @@
     ],
     "minimum": 0,
     "description": "Duração da execução do especialista em milissegundos, medida pelo backend"
-  },
-  "response_time_is_mock": {
-    "bsonType": "bool",
-    "description": "true para duração simulada; false para medição real do backend"
   }
 };
   const messageDependencies = {
   "agent_name": [
-    "response_time_ms",
-    "response_time_is_mock"
+    "response_time_ms"
   ],
   "response_time_ms": [
-    "agent_name",
-    "response_time_is_mock"
-  ],
-  "response_time_is_mock": [
-    "agent_name",
-    "response_time_ms"
+    "agent_name"
   ]
 };
   const deviceFields = {
@@ -54,10 +44,6 @@
     ],
     "minimum": 0,
     "description": "Tempo online acumulado, em segundos, no período de disponibilidade"
-  },
-  "availability_is_mock": {
-    "bsonType": "bool",
-    "description": "true para histórico simulado; false para contagem real do backend"
   },
   "unavailabilities": {
     "bsonType": "array",
@@ -104,8 +90,7 @@
   "available_seconds": [
     "availability_started_at",
     "availability_updated_at",
-    "unavailabilities",
-    "availability_is_mock"
+    "unavailabilities"
   ],
   "availability_started_at": [
     "available_seconds"
@@ -114,9 +99,6 @@
     "available_seconds"
   ],
   "unavailabilities": [
-    "available_seconds"
-  ],
-  "availability_is_mock": [
     "available_seconds"
   ]
 };
@@ -139,9 +121,14 @@
       if (!items || items.bsonType !== 'object' || !items.properties) {
         throw new Error('chat_sessions.messages.items precisa ser um objeto com properties');
       }
+      delete items.properties.response_time_is_mock;
+      if (items.dependencies) delete items.dependencies.response_time_is_mock;
       Object.assign(items.properties, messageFields);
       items.dependencies = Object.assign({}, items.dependencies, messageDependencies);
     } else {
+      delete schema.properties.availability_is_mock;
+      delete schema.properties.unavailability_reason;
+      if (schema.dependencies) delete schema.dependencies.availability_is_mock;
       Object.assign(schema.properties, deviceFields);
       schema.dependencies = Object.assign({}, schema.dependencies, deviceDependencies);
     }

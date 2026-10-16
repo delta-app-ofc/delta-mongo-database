@@ -169,8 +169,7 @@ Cada documento pode ter no máximo **50–100 mensagens**. Ao atingir o limite, 
       "sent_at": "2026-07-17T14:00:12Z",
       "api_status_code": 200,
       "agent_name": "leak",
-      "response_time_ms": 1800,
-      "response_time_is_mock": true
+      "response_time_ms": 1800
     }
   ]
 }
@@ -210,7 +209,7 @@ db.chat_sessions.updateOne(
     $push: { messages: {
       role: "bot", content_type: "text", content: "...", sent_at: new Date(),
       api_status_code: NumberInt(200), agent_name: "leak",
-      response_time_ms: NumberLong(1800), response_time_is_mock: true
+      response_time_ms: NumberLong(1800)
     } },
     $set: { last_activity_at: new Date() }
   }
@@ -219,8 +218,8 @@ db.chat_sessions.updateOne(
 
 ### Agente e tempo de resposta
 
-Os campos `agent_name`, `response_time_ms` e `response_time_is_mock` são opcionais para
-mensagens antigas. Quando qualquer um é informado, os três são exigidos juntos.
+Os campos `agent_name` e `response_time_ms` são opcionais para mensagens antigas.
+Quando qualquer um é informado, os dois são exigidos juntos.
 `response_time_ms` aceita BSON int/long não negativo, em milissegundos inteiros.
 `agent_name` é uma string não vazia com o nome estável do especialista (ex.: `leak`,
 `consumption`, `forecast`). Novos nomes não exigem alterar um enum no banco.
@@ -232,8 +231,9 @@ registra um especialista por mensagem, não cada chamada interna ao provedor de 
 Caso uma resposta reúna vários especialistas, será necessário um contrato por execução.
 A aplicação é responsável por essa semântica; o validator verifica tipos e dependências.
 
-A seed e o exemplo acima usam `response_time_is_mock: true`. A medição real deverá usar
-`false`; registros sem esses campos são desconhecidos, não respostas instantâneas.
+A seed e o exemplo acima são simulados para desenvolvimento. O schema não inclui marcador
+de mock; não use essa seed como medição real. Registros sem esses campos são desconhecidos,
+não respostas instantâneas.
 O cálculo real pelo backend ainda não foi implementado. A média, o p90 e o boxplot devem
 usar durações individuais, filtradas por especialista, sem misturar mocks e medições reais.
 Mantenha sucessos e falhas separados ao comparar latência.

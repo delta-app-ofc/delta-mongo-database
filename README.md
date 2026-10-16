@@ -20,12 +20,12 @@ Consulte [telemetria](collections/db_delta_telemetry.md), [aplicativo e clima](c
 ## Métricas de resposta e disponibilidade
 
 As mensagens de `chat_sessions` aceitam o especialista em `agent_name`, sua duração em
-`response_time_ms` e o marcador `response_time_is_mock`. `api_status_code` continua sendo
+`response_time_ms`. `api_status_code` continua sendo
 a fonte de falhas técnicas; ele não representa avaliação do juiz.
 
 `device_status` aceita `available_seconds`, o início/corte da observação e um array
 `unavailabilities` com início, fim, segundos indisponíveis e motivo. A seed traz exemplos
-marcados como mockados. Os campos são opcionais para documentos antigos, sem zerar dados
+simulados apenas para desenvolvimento. Os campos são opcionais para documentos antigos, sem zerar dados
 desconhecidos. Backend e pipelines analíticos ainda não foram alterados.
 
 Em coleções existentes, use manualmente [script-bi-metrics-update.js](scripts/script-bi-metrics-update.js)

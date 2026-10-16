@@ -67,7 +67,7 @@ function rejects(collection, document, description) {
 const chat = db.getCollection("chat_sessions");
 const legacyMessage = { role: "bot", content_type: "text", content: "Teste", api_status_code: NumberInt(200) };
 const response = Object.assign({}, legacyMessage, {
-  agent_name: "consumption", response_time_ms: NumberLong(1800), response_time_is_mock: true
+  agent_name: "consumption", response_time_ms: NumberLong(1800)
 });
 function session(message) {
   return { user_id: NumberInt(999001), started_at: new Date(), messages: [message] };
@@ -86,7 +86,6 @@ const availability = {
   availability_started_at: ISODate("2026-07-17T00:00:00Z"),
   availability_updated_at: ISODate("2026-07-17T01:00:00Z"),
   available_seconds: NumberLong(3000),
-  availability_is_mock: true,
   unavailabilities: [{
     started_at: ISODate("2026-07-17T00:50:00Z"), ended_at: null,
     unavailable_seconds: NumberLong(600), unavailability_reason: "Sem conexão"

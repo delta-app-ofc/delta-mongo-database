@@ -95,12 +95,10 @@ Um **único documento por dispositivo**, atualizado via *upsert* a cada ping. Re
   "wifi_signal_rssi": "good",
   "firmware_version": "v1.2.3",
   "connectivity_status": "online",
-  "unavailability_reason": null,
   "battery_level": 80,
   "availability_started_at": ISODate("2026-07-16T17:10:00Z"),
   "availability_updated_at": ISODate("2026-07-17T17:10:00Z"),
   "available_seconds": NumberLong(85800),
-  "availability_is_mock": true,
   "unavailabilities": [
     {
       "started_at": ISODate("2026-07-17T10:00:00Z"),
@@ -140,8 +138,8 @@ db.device_status.updateOne(
 
 ## Disponibilidade e indisponibilidades
 
-O grupo `availability_started_at`, `availability_updated_at`, `available_seconds`,
-`availability_is_mock` e `unavailabilities` é opcional para compatibilidade. Informar
+O grupo `availability_started_at`, `availability_updated_at`, `available_seconds`
+e `unavailabilities` é opcional para compatibilidade. Informar
 qualquer um exige o grupo completo. Tempos em segundos aceitam BSON int/long não negativo;
 as datas são BSON date. A seed contém exemplos simulados, inclusive um intervalo aberto.
 O contador real deverá ser mantido pelo backend; ele não é calculado pelos scripts MongoDB.
@@ -153,9 +151,9 @@ O contador real deverá ser mantido pelo backend; ele não é calculado pelos sc
 - `available_seconds`: tempo comprovadamente online entre início e corte.
 - `unavailabilities`: intervalos fechados ou uma única ocorrência ainda aberta (`ended_at: null`).
   Cada duração é calculada até seu fim ou, se aberta, até `availability_updated_at`.
-- `unavailability_reason` externo: motivo atual; dentro do array: motivo histórico de cada evento.
-  O motivo histórico permanece mesmo após o dispositivo voltar a ficar online.
-- `availability_is_mock`: `true` para simulação e `false` para contagem real.
+- `unavailability_reason`: motivo histórico dentro de cada intervalo; permanece após a reconexão.
+  O campo externo foi removido do contrato. A seed contém apenas exemplos simulados; não há
+  marcador de mock no schema atual.
 
 Para o período inteiro coberto, a disponibilidade é
 `100 × available_seconds / (available_seconds + soma(unavailable_seconds))`.
