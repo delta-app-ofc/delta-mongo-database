@@ -79,11 +79,10 @@ db.createCollection("device_status", {
       bsonType: "object",
       required: ["device_id"],
       dependencies: {
-        available_seconds: ["availability_started_at", "availability_updated_at", "unavailabilities", "availability_is_mock"],
+        available_seconds: ["availability_started_at", "availability_updated_at", "unavailabilities"],
         availability_started_at: ["available_seconds"],
         availability_updated_at: ["available_seconds"],
-        unavailabilities: ["available_seconds"],
-        availability_is_mock: ["available_seconds"]
+        unavailabilities: ["available_seconds"]
       },
       properties: {
         _id: { bsonType: "objectId" },
@@ -127,10 +126,6 @@ db.createCollection("device_status", {
           bsonType: ["int", "long"],
           minimum: 0,
           description: "Tempo online acumulado, em segundos, no período de disponibilidade"
-        },
-        availability_is_mock: {
-          bsonType: "bool",
-          description: "true para histórico simulado; false para contagem real do backend"
         },
         unavailabilities: {
           bsonType: "array",
