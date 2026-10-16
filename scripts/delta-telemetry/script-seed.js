@@ -52,13 +52,11 @@ db.device_status.insertMany([
     wifi_signal_rssi: "good",
     firmware_version: "v1.2.3",
     connectivity_status: "online",
-    unavailability_reason: null,
     battery_level: 80,
     // Histórico simulado de 24 horas: 85.800 s online + 600 s offline.
     availability_started_at: new Date("2026-07-16T17:10:00Z"),
     availability_updated_at: new Date("2026-07-17T17:10:00Z"),
     available_seconds: NumberLong(85800),
-    availability_is_mock: true,
     unavailabilities: [
       {
         started_at: new Date("2026-07-17T10:00:00Z"),
@@ -74,13 +72,11 @@ db.device_status.insertMany([
     wifi_signal_rssi: "weak",
     firmware_version: "v1.2.2",
     connectivity_status: "offline",
-    unavailability_reason: "Sem alimentação elétrica",
     battery_level: 67,
     // Intervalo aberto: os segundos estão atualizados somente até 17:10Z.
     availability_started_at: new Date("2026-07-16T17:10:00Z"),
     availability_updated_at: new Date("2026-07-17T17:10:00Z"),
     available_seconds: NumberLong(85800),
-    availability_is_mock: true,
     unavailabilities: [
       {
         started_at: new Date("2026-07-17T17:00:00Z"),

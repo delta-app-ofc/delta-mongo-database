@@ -90,8 +90,7 @@ db.chat_sessions.insertMany([
         api_status_code: NumberInt(200),
         // Exemplo simulado: não representa tempo medido no backend.
         agent_name: "leak",
-        response_time_ms: NumberInt(1800),
-        response_time_is_mock: true
+        response_time_ms: NumberInt(1800)
       }
     ]
   }

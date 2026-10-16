@@ -106,10 +106,6 @@ db.createCollection("device_status", {
           enum: ["online", "offline", "unstable", null],
           description: "Status de conectividade"
         },
-        unavailability_reason: { 
-          bsonType: ["string", "null"],
-          description: "Motivo do status offline/unstable"
-        },
         battery_level: {
           bsonType: ["int", "null"],
           description: "Nível de bateria"
