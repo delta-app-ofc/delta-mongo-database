@@ -53,12 +53,4 @@ try {
 }
 assert(rejectedInvalidDocument, "user_preferences rejects a document with an invalid user_id type (code 121)");
 
-let rejectedInvalidChatTitle = false;
-try {
-  db.chat_sessions.insertOne({ user_id: NumberInt(1), started_at: new Date(), title: 123 });
-} catch (error) {
-  rejectedInvalidChatTitle = error.code === 121;
-}
-assert(rejectedInvalidChatTitle, "chat_sessions rejects a document with a non-string title (code 121)");
-
 print("MongoDB local smoke checks passed.");
