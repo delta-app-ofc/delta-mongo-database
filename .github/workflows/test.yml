@@ -1,0 +1,24 @@
+name: Testes MongoDB
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mongo-tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Executar smoke test
+        run: docker compose -p delta-mongo-ci -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from runner
+      - name: Remover containers
+        if: always()
+        run: docker compose -p delta-mongo-ci -f docker-compose.test.yml down
