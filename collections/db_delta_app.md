@@ -387,3 +387,84 @@ Os IDs no MongoDB (`user_id`, `device_id`) são **referências lógicas** para r
 - `device_id` → `tb_device.device_id` no PostgreSQL
 
 O MongoDB **não impõe Foreign Keys** (típico de NoSQL), então a validação desses IDs é responsabilidade do código do back-end antes de inserir.
+
+---
+
+## Coleção: `observability_requests`
+
+### Descrição
+
+Uma linha por requisição de chat da API de IA (`delta-artificial-intelligence`), com custo estimado, tokens,
+latência por etapa e resultado. Alimenta o painel e o relatório de observabilidade. **Não guarda pergunta,
+resposta nem `user_id`**: o usuário aparece só como `user_hash`, um HMAC com segredo do servidor, que serve para
+contar usuários distintos e não pode ser revertido.
+
+### Ciclo de Vida
+
+Temporário. Um índice TTL apaga cada registro 90 dias depois de `created_at`.
+
+### Estrutura
+
+```javascript
+{
+  _id: ObjectId("..."),
+  request_id: "9f1c2a...",              // mesmo valor do cabeçalho X-Request-ID
+  created_at: ISODate("2026-11-01T12:00:00Z"),
+  mode: "chat",                          // chat | judge
+  client: "app",                         // app | web | playground | unknown
+  user_hash: "b41f...",                  // HMAC do user_id; opcional
+  outcome: "success",                    // success | partial | error | rejected
+  resolved: true,
+  total_ms: 8120.4,
+  overhead_ms: 310.2,
+  nodes_ms: { context: 410.1, execute: 6900.0, judge: 500.3 },
+  agents_ms: { consumption: 6400.2 },
+  revisions: 0,
+  input_tokens: 5120,
+  output_tokens: 240,
+  embedding_tokens: 180,
+  model_calls: 5,
+  fallback_calls: 0,
+  by_component: { consumption: { calls: 2, input_tokens: 3000, output_tokens: 120, model_ms: 2900.0, cost_usd: 0.00036 } },
+  llm_cost_usd: 0.00063,
+  embedding_cost_usd: 0.000036,
+  jev_cost_usd: 0,
+  cost_usd: 0.000666,
+  unpriced_models: []
+}
+```
+
+### Campos válidos: `client`
+
+| Valor | Origem |
+|---|---|
+| `app` | Aplicativo móvel |
+| `web` | Plataforma web |
+| `playground` | Console de testes da API de IA |
+| `unknown` | Cabeçalho `X-Client` ausente ou desconhecido |
+
+### Índices
+
+| Nome | Tipo | Campos | Justificativa |
+|---|---|---|---|
+| `idx_created_at_ttl_90d` | TTL | `created_at` (90 dias) | Evita crescimento sem limite |
+| `idx_request_id_unique` | Único | `request_id` | Uma linha por requisição |
+| `idx_client_created_at_desc` | Composto | `client`, `created_at` DESC | Custo e uso por canal |
+| `idx_user_hash_created_at_desc` | Composto parcial | `user_hash`, `created_at` DESC | Usuários distintos por semana |
+
+### Padrões de Query
+
+```javascript
+// Painel: custo total e por canal nos últimos 7 dias
+db.observability_requests.aggregate([
+  { $match: { created_at: { $gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } } },
+  { $group: { _id: "$client", requests: { $sum: 1 }, cost_usd: { $sum: "$cost_usd" } } },
+  { $sort: { cost_usd: -1 } }
+]);
+
+// Painel: usuários distintos por semana
+db.observability_requests.aggregate([
+  { $match: { user_hash: { $exists: true }, created_at: { $gte: new Date("2026-11-01") } } },
+  { $group: { _id: "$user_hash", questions: { $sum: 1 } } }
+]);
+```

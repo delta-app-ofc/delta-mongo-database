@@ -133,4 +133,44 @@ db.weather_daily.createIndex(
 
 print("✓ Índice único criado em weather_daily (country + state + city + date)");
 
+// ─────────────────────────────────────────────────────────────────────────
+// Coleção: observability_requests
+// ─────────────────────────────────────────────────────────────────────────
+
+// TTL: apaga os registros 90 dias depois de created_at.
+// Justificativa: o painel só olha as últimas semanas; sem expiração a coleção cresceria sem limite.
+db.observability_requests.createIndex(
+  { created_at: 1 },
+  { expireAfterSeconds: 7776000, name: "idx_created_at_ttl_90d" }
+);
+
+print("✓ Índice TTL criado em observability_requests (created_at, 90 dias)");
+
+// Único: request_id
+// Justificativa: uma linha por requisição; evita duplicar se a gravação for repetida.
+db.observability_requests.createIndex(
+  { request_id: 1 },
+  { unique: true, name: "idx_request_id_unique" }
+);
+
+print("✓ Índice ÚNICO criado em observability_requests (request_id)");
+
+// Composto: client + created_at (descendente)
+// Justificativa: custo e uso por canal (app, web, playground) numa janela de tempo.
+db.observability_requests.createIndex(
+  { client: 1, created_at: -1 },
+  { name: "idx_client_created_at_desc" }
+);
+
+print("✓ Índice composto criado em observability_requests (client + created_at DESC)");
+
+// Composto parcial: user_hash + created_at
+// Justificativa: contar usuários distintos por semana e perguntas por usuário.
+db.observability_requests.createIndex(
+  { user_hash: 1, created_at: -1 },
+  { partialFilterExpression: { user_hash: { $exists: true } }, name: "idx_user_hash_created_at_desc" }
+);
+
+print("✓ Índice composto parcial criado em observability_requests (user_hash + created_at DESC)");
+
 print("✅ Todos os índices foram criados com sucesso!");
