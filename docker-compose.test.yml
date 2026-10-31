@@ -21,14 +21,11 @@ services:
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - |-
-        mongosh --quiet mongodb://mongo:27017 --file /scripts/delta-telemetry/script-collections.js
-        mongosh --quiet mongodb://mongo:27017 --file /scripts/delta-app/script-collections.js
-        mongosh --quiet mongodb://mongo:27017 --file /scripts/delta-telemetry/script-indexes.js
-        mongosh --quiet mongodb://mongo:27017 --file /scripts/delta-app/script-indexes.js
-        exec mongosh --quiet mongodb://mongo:27017 --file /tests/smoke.js
+        exec /bin/sh /tests/run-smoke.sh
     volumes:
       - ./scripts:/scripts:ro
       - ./tests:/tests:ro
+      - ./reports:/reports
     depends_on:
       mongo:
         condition: service_healthy
