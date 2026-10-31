@@ -1,0 +1,53 @@
+name: Validação Sonar
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sonar-mongo-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Testes de integração MongoDB
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPOSE_PROJECT_NAME: delta-mongo-sonar-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Preparar diretório de relatórios
+        run: mkdir -p reports
+      - name: Executar smoke comportamental em MongoDB isolado
+        run: docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from runner
+      - name: Parar os serviços desta execução
+        if: always()
+        run: docker compose -f docker-compose.test.yml down --remove-orphans
+      - name: Publicar relatório JUnit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-reports
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 7
+
+  scan:
+    name: Análise Sonar
+    needs: tests
+    if: github.event_name == 'pull_request'
+    uses: delta-app-ofc/.github/.github/workflows/sonar_scan.yml@cb23646ff67b82ee47a73f4c94babef59c1dd20d
+    with:
+      project_key: delta-app-ofc_delta-mongo-database
+      organization: delta-app-ofc
+      artifact_name: sonar-reports
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
