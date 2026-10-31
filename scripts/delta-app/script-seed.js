@@ -74,6 +74,9 @@ db.chat_sessions.insertMany([
     is_open: false,
     is_active: false,
     is_deleted: false,
+    title: "Consumo acima do normal",
+    preview: "Fluxo contínuo de madrugada, possível vazamento",
+    icon: "leak",
     messages: [
       {
         role: "user",
