@@ -19,3 +19,14 @@ Consulte [telemetria](collections/db_delta_telemetry.md), [aplicativo e clima](c
 
 O script atual do índice único de `weather_daily` usa `weather_date`, conforme o schema.
 Consulte [DOCKER-HELP.md](DOCKER-HELP.md) para usar o ambiente Docker local.
+
+## Teste de integração
+
+O Compose de testes inicializa MongoDB 7 em armazenamento temporário, sem porta publicada e sem conexão com o Atlas. Ele aplica os scripts de coleções e índices e executa as verificações comportamentais em `tests/smoke.js`.
+
+```bash
+docker compose -p delta-mongo-audit-test -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from runner
+docker compose -p delta-mongo-audit-test -f docker-compose.test.yml down
+```
+
+O runner grava um relatório JUnit agregado em `reports/junit.xml`; ele registra o resultado da execução de integração, sem fingir contar cada asserção como um teste separado. A execução em `mongosh` não produz relatório LCOV, então esta suite não declara um percentual de cobertura. O scanner Sonar analisa os scripts JavaScript; mudanças futuras nesses scripts precisam fornecer evidência de cobertura compatível com a política central.

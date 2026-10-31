@@ -51,6 +51,7 @@ build/
 # JavaScript / TypeScript / Node
 # ============================================
 node_modules/
+reports/
 .npm/
 .yarn/cache/
 .pnpm-store/
