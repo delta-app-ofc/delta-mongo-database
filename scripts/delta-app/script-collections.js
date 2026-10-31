@@ -448,7 +448,9 @@ db.createCollection("observability_requests", {
 
         input_tokens: { bsonType: "number", minimum: 0, description: "Tokens de entrada dos modelos de chat" },
         output_tokens: { bsonType: "number", minimum: 0, description: "Tokens de saída dos modelos de chat" },
-        embedding_tokens: { bsonType: "number", minimum: 0, description: "Tokens estimados dos embeddings" },
+        embedding_tokens: { bsonType: "number", minimum: 0, description: "Tokens dos embeddings, contados pelo count_tokens do Google" },
+        embedding_uncounted: { bsonType: "int", minimum: 0, description: "Chamadas de embedding sem contagem de tokens; o custo delas não é estimado" },
+        jev_tokens: { bsonType: "number", minimum: 0, description: "Tokens de entrada do Jev, devolvidos pela API" },
         model_calls: { bsonType: "int", minimum: 0, description: "Chamadas aos modelos de chat" },
         fallback_calls: { bsonType: "int", minimum: 0, description: "Chamadas feitas ao modelo reserva" },
 
@@ -458,8 +460,8 @@ db.createCollection("observability_requests", {
         },
 
         llm_cost_usd: { bsonType: "number", minimum: 0, description: "Custo estimado dos modelos de chat em USD" },
-        embedding_cost_usd: { bsonType: "number", minimum: 0, description: "Custo estimado dos embeddings em USD" },
-        jev_cost_usd: { bsonType: "number", minimum: 0, description: "Custo configurado do Jev em USD" },
+        embedding_cost_usd: { bsonType: "number", minimum: 0, description: "Custo dos embeddings em USD, a partir dos tokens contados" },
+        jev_cost_usd: { bsonType: "number", minimum: 0, description: "Custo do Jev em USD, a partir dos tokens devolvidos pela API" },
         cost_usd: { bsonType: "number", minimum: 0, description: "Custo total estimado em USD" },
 
         unpriced_models: {

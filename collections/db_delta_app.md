@@ -422,13 +422,15 @@ Temporário. Um índice TTL apaga cada registro 90 dias depois de `created_at`.
   revisions: 0,
   input_tokens: 5120,
   output_tokens: 240,
-  embedding_tokens: 180,
+  embedding_tokens: 180,                 // contados pelo count_tokens do Google
+  embedding_uncounted: 0,                // chamadas sem contagem (custo não estimado)
+  jev_tokens: 15961,                     // devolvidos pela API do Jev
   model_calls: 5,
   fallback_calls: 0,
   by_component: { consumption: { calls: 2, input_tokens: 3000, output_tokens: 120, model_ms: 2900.0, cost_usd: 0.00036 } },
   llm_cost_usd: 0.00063,
   embedding_cost_usd: 0.000036,
-  jev_cost_usd: 0,
+  jev_cost_usd: 0.00067,
   cost_usd: 0.000666,
   unpriced_models: []
 }
