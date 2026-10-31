@@ -152,6 +152,21 @@ db.createCollection("chat_sessions", {
           bsonType: "bool",
           description: "Soft delete (não remove o documento)"
         },
+        title: {
+          bsonType: "string",
+          maxLength: 100,
+          description: "Título curto da conversa para a lista de histórico (gerado pela IA)"
+        },
+        preview: {
+          bsonType: "string",
+          maxLength: 200,
+          description: "Frase-resumo da conversa para a lista de histórico (gerada pela IA)"
+        },
+        icon: {
+          bsonType: "string",
+          maxLength: 40,
+          description: "Nome do ícone do assunto da conversa, mapeado pelo app (gerado pela IA)"
+        },
         messages: {
           bsonType: "array",
           description: "Mensagens da sessão (máx. 50-100)",

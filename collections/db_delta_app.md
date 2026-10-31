@@ -143,6 +143,23 @@ Cada documento pode ter no máximo **50–100 mensagens**. Ao atingir o limite, 
 1. Fecha a sessão (`is_open: false`)
 2. Cria uma nova sessão (ex: "Parte 2")
 
+### Campos de resumo da conversa
+
+Usados pela lista de histórico do app (título, prévia e ícone de cada conversa). São opcionais: a
+API de IA (`delta-artificial-intelligence`) os gera com um modelo de linguagem na primeira troca de
+mensagens da sessão. Sessões sem esses campos continuam válidas; nesse caso o cliente usa o início da
+primeira mensagem como título.
+
+| Campo | Tipo | Limite | Descrição |
+|---|---|---|---|
+| `title` | string | 100 caracteres | Título curto da conversa (a IA gera até 40) |
+| `preview` | string | 200 caracteres | Frase-resumo exibida abaixo do título (a IA gera até 80) |
+| `icon` | string | 40 caracteres | Nome do ícone do assunto, que o app converte em imagem |
+
+Valores de `icon` hoje produzidos pela IA: `routine`, `habits`, `summary`, `report`, `savings`,
+`leak`, `forecast`, `consumption`, `tips` e `general`. O validador não restringe a lista, porque ela
+pode crescer junto com os ícones do app; um valor desconhecido deve ser exibido como `general`.
+
 ### Estrutura
 
 ```json
@@ -154,6 +171,9 @@ Cada documento pode ter no máximo **50–100 mensagens**. Ao atingir o limite, 
   "is_open": false,
   "is_active": false,
   "is_deleted": false,
+  "title": "Consumo acima do normal",
+  "preview": "Fluxo contínuo de madrugada, possível vazamento",
+  "icon": "leak",
   "messages": [
     {
       "role": "user",
