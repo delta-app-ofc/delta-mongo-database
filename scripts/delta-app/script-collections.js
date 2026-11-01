@@ -383,4 +383,114 @@ db.createCollection("weather_daily", {
 
 print("✓ Coleção 'weather_daily' criada (db_delta_app)");
 
+// ─────────────────────────────────────────────────────────────────────────
+// Coleção: observability_requests
+// Descrição: Uma linha por requisição de chat da API de IA, com custo, tokens,
+//            latência por etapa e resultado. Não guarda pergunta, resposta nem user_id.
+// Ciclo de vida: Temporário (TTL de 90 dias em created_at)
+// ─────────────────────────────────────────────────────────────────────────
+
+db.createCollection("observability_requests", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["request_id", "created_at", "mode", "outcome", "total_ms", "cost_usd"],
+      properties: {
+        _id: { bsonType: "objectId" },
+
+        request_id: {
+          bsonType: "string",
+          description: "Identificador da requisição (o mesmo do cabeçalho X-Request-ID)"
+        },
+
+        created_at: {
+          bsonType: "date",
+          description: "Momento em que a requisição terminou; base do TTL"
+        },
+
+        mode: {
+          enum: ["chat", "judge"],
+          description: "Fluxo executado: chat completo ou fluxo com o Juiz"
+        },
+
+        client: {
+          enum: ["app", "web", "playground", "unknown"],
+          description: "Cliente que chamou a API (cabeçalho X-Client); permite comparar o custo por canal"
+        },
+
+        user_hash: {
+          bsonType: "string",
+          description: "HMAC do user_id com segredo do servidor; só conta usuários distintos, não é reversível"
+        },
+
+        outcome: {
+          enum: ["success", "partial", "error", "rejected"],
+          description: "Resultado da requisição"
+        },
+
+        resolved: {
+          bsonType: "bool",
+          description: "Verdadeiro quando a resposta foi publicada sem erro e sem bloqueio do Juiz"
+        },
+
+        total_ms: {
+          bsonType: "number",
+          minimum: 0,
+          description: "Tempo total da requisição em milissegundos"
+        },
+
+        overhead_ms: {
+          bsonType: "number",
+          minimum: 0,
+          description: "Tempo fora das etapas do grafo (orquestração) em milissegundos"
+        },
+
+        nodes_ms: {
+          bsonType: "object",
+          description: "Tempo por etapa do grafo, em milissegundos"
+        },
+
+        agents_ms: {
+          bsonType: "object",
+          description: "Tempo por agente especialista, em milissegundos"
+        },
+
+        revisions: {
+          bsonType: "int",
+          minimum: 0,
+          description: "Quantidade de correções pedidas pelo Juiz"
+        },
+
+        input_tokens: { bsonType: "number", minimum: 0, description: "Tokens de entrada dos modelos de chat" },
+        output_tokens: { bsonType: "number", minimum: 0, description: "Tokens de saída dos modelos de chat" },
+        embedding_tokens: { bsonType: "number", minimum: 0, description: "Tokens dos embeddings, contados pelo count_tokens do Google" },
+        embedding_uncounted: { bsonType: "int", minimum: 0, description: "Chamadas de embedding sem contagem de tokens; o custo delas não é estimado" },
+        jev_tokens: { bsonType: "number", minimum: 0, description: "Tokens de entrada do Jev, devolvidos pela API" },
+        model_calls: { bsonType: "int", minimum: 0, description: "Chamadas aos modelos de chat" },
+        fallback_calls: { bsonType: "int", minimum: 0, description: "Chamadas feitas ao modelo reserva" },
+
+        by_component: {
+          bsonType: "object",
+          description: "Chamadas, tokens, tempo de modelo e custo por componente do grafo"
+        },
+
+        llm_cost_usd: { bsonType: "number", minimum: 0, description: "Custo estimado dos modelos de chat em USD" },
+        embedding_cost_usd: { bsonType: "number", minimum: 0, description: "Custo dos embeddings em USD, a partir dos tokens contados" },
+        jev_cost_usd: { bsonType: "number", minimum: 0, description: "Custo do Jev em USD, a partir dos tokens devolvidos pela API" },
+        cost_usd: { bsonType: "number", minimum: 0, description: "Custo total estimado em USD" },
+
+        unpriced_models: {
+          bsonType: "array",
+          items: { bsonType: "string" },
+          description: "Modelos usados que não tinham preço cadastrado"
+        }
+      }
+    }
+  },
+
+  validationLevel: "moderate"
+});
+
+print("✓ Coleção 'observability_requests' criada (db_delta_app)");
+
 print("\n✅ Todas as coleções foram criadas com sucesso!");

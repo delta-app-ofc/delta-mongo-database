@@ -32,7 +32,7 @@ compostos e índices parciais.
 Os scripts trabalham com dois bancos:
 
 - `db_delta_telemetry`: `consumption_summary` e `device_status`;
-- `db_delta_app`: `user_preferences`, `alerts_history`, `chat_sessions`, `chat_feedback` e `weather_daily`.
+- `db_delta_app`: `user_preferences`, `alerts_history`, `chat_sessions`, `chat_feedback`, `weather_daily` e `observability_requests`.
 
 As coleções usam validação de schema com `validationLevel: "moderate"`. O hardware envia consumo consolidado diretamente para `consumption_summary`; a telemetria não possui TTL nos scripts atuais. `consumption_summary` e as coleções da aplicação, incluindo `weather_daily`, são permanentes na modelagem atual. O clima usa `weather_date` e `wind_speed_mps`; o índice ainda usa `date`, divergência registrada em `collections/db_delta_app.md`. `chat_sessions` usa mensagens embutidas no padrão Bucket.
 
