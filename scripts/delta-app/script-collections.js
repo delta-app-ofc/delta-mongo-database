@@ -92,7 +92,8 @@ db.createCollection("alerts_history", {
         },
         alert_type: {
           bsonType: "string",
-          enum: ["vazamento_continuo", "fluxo_atipico", "dispositivo_offline", "leitura_impossivel"],
+          enum: ["vazamento_continuo", "fluxo_atipico", "consumo_fora_do_expediente", "mudanca_padrao",
+                 "dispositivo_offline", "leitura_impossivel"],
           description: "Tipo de anomalia detectada"
         },
         triggered_at: {
@@ -147,9 +148,9 @@ db.createCollection("user_hour_baseline", {
         },
         hour_of_week: {
           bsonType: "int",
-          minimum: 0,
+          minimum: -1,
           maximum: 167,
-          description: "Hora da semana: 0 = segunda 00h, 167 = domingo 23h"
+          description: "Hora da semana no fuso do imóvel (America/Sao_Paulo): 0 = segunda 00h, 167 = domingo 23h; -1 = documento de estado do dispositivo (regime e CUSUM)"
         },
         median: {
           bsonType: ["double", "null"],
@@ -207,6 +208,23 @@ db.createCollection("user_hour_baseline", {
         updated_at: {
           bsonType: "date",
           description: "Última atualização do documento"
+        },
+        samples: {
+          bsonType: "array",
+          items: { bsonType: "double" },
+          description: "Últimos litros por janela aceitos no slot (base da mediana e do MAD)"
+        },
+        rule_state: {
+          bsonType: "object",
+          description: "Contadores das regras no estado do dispositivo (confirmação, encerramento de alerta, direção do regime)"
+        },
+        regime_acc: {
+          bsonType: "object",
+          description: "Soma da hora em andamento usada pelo rastreador de regime"
+        },
+        visit_until: {
+          bsonType: ["date", "null"],
+          description: "Parâmetro opcional e auditável: até quando uma mudança de regime vale como visita declarada"
         }
       }
     }
