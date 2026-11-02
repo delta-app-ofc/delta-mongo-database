@@ -82,9 +82,9 @@ db.user_hour_baseline.insertMany([
     regime_since: null,
     cusum_pos: Double(0),
     cusum_neg: Double(0),
-    last_window_finished_at: new Date("2026-07-13T03:05:00Z"),
+    last_window_finished_at: new Date("2026-07-13T06:05:00Z"),
     config_version: "dev-1",
-    updated_at: new Date("2026-07-13T03:05:00Z")
+    updated_at: new Date("2026-07-13T06:05:00Z")
   },
   {
     device_id: "ESP32-SP-0912",
@@ -101,9 +101,9 @@ db.user_hour_baseline.insertMany([
     regime_since: null,
     cusum_pos: Double(0),
     cusum_neg: Double(0),
-    last_window_finished_at: new Date("2026-07-14T08:05:00Z"),
+    last_window_finished_at: new Date("2026-07-14T11:05:00Z"),
     config_version: "dev-1",
-    updated_at: new Date("2026-07-14T08:05:00Z")
+    updated_at: new Date("2026-07-14T11:05:00Z")
   }
 ]);
 
