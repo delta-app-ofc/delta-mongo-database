@@ -42,13 +42,17 @@ execute as migrações com a credencial administrativa no cluster de cada banco:
 ```bash
 mongosh "$MONGO_TELEMETRY_ADMIN_URI" --file scripts/delta-telemetry/script-migrate-anomaly-fields.js
 mongosh "$MONGO_APP_ADMIN_URI" --file scripts/delta-app/script-migrate-alert-types.js
+mongosh "$MONGO_APP_ADMIN_URI" --file scripts/delta-app/script-migrate-user-hour-baseline.js
+mongosh "$MONGO_TELEMETRY_ADMIN_URI" --file scripts/delta-telemetry/script-indexes.js
 mongosh "$MONGO_APP_ADMIN_URI" --file scripts/delta-app/script-indexes.js
 ```
 
 As migrações preservam documentos e podem ser repetidas. Não execute o seed em produção.
 Confira o índice único `(device_id, hour_of_week)` de `user_hour_baseline` e o índice
 `(device_id, rule, resolved_at)` de `alerts_history` antes de ligar o detector.
-A API apenas verifica os índices; a conta de serviço não precisa de `createIndex`.
+A API apenas verifica os índices; a conta de serviço precisa de `listIndexes`, mas não de `createIndex`.
+Em instalações existentes, atualize também a custom role `role_api_service` no banco `admin` de cada cluster, acrescentando `listIndexes` aos privilégios do respectivo banco, conforme `script-roles.js`. Reexecutar `createRole` não atualiza uma role existente.
+A migração do baseline deve preceder seus índices: criar um índice em uma coleção ausente a criaria sem validator.
 
 ### 2.3 Inserir Dados de Teste (Opcional)
 

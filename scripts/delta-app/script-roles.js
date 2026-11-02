@@ -15,7 +15,7 @@ db.createRole(
     privileges: [
       {
         resource: { db: "db_delta_app", collection: "" },
-        actions: ["find", "insert", "update", "delete"]
+        actions: ["find", "insert", "update", "delete", "listIndexes"]
       }
     ],
     roles: []
