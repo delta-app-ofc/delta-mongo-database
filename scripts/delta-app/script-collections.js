@@ -92,7 +92,8 @@ db.createCollection("alerts_history", {
         },
         alert_type: {
           bsonType: "string",
-          enum: ["vazamento_continuo", "fluxo_atipico", "dispositivo_offline", "leitura_impossivel"],
+          enum: ["vazamento_continuo", "fluxo_atipico", "consumo_fora_do_expediente", "mudanca_padrao",
+                 "dispositivo_offline", "leitura_impossivel"],
           description: "Tipo de anomalia detectada"
         },
         triggered_at: {
@@ -106,6 +107,14 @@ db.createCollection("alerts_history", {
         severity: {
           enum: ["low", "medium", "high", null],
           description: "Nível de severidade"
+        },
+        rule: {
+          bsonType: "string",
+          description: "Regra do detector que abriu o alerta (ex.: continuous_flow, night_floor, robust_zscore)"
+        },
+        evidence: {
+          bsonType: "object",
+          description: "Evidências da detecção (leituras, horários e baseline usado)"
         }
       }
     }
@@ -114,6 +123,120 @@ db.createCollection("alerts_history", {
 });
 
 print("✓ Coleção 'alerts_history' criada (db_delta_app)");
+
+// ─────────────────────────────────────────────────────────────────────────
+// Coleção: user_hour_baseline
+// Descrição: Baseline estatístico por dispositivo e hora da semana (168 slots),
+//            mantido pelo detector de anomalias do delta-api-mongo
+// Ciclo de vida: Permanente (estado derivado, pode ser recalculado)
+// ─────────────────────────────────────────────────────────────────────────
+
+db.createCollection("user_hour_baseline", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["device_id", "hour_of_week", "count"],
+      properties: {
+        _id: { bsonType: "objectId" },
+        device_id: {
+          bsonType: "string",
+          description: "Dispositivo (medidor) ao qual o baseline pertence"
+        },
+        property_id: {
+          bsonType: ["int", "null"],
+          description: "Imóvel do dispositivo (referência ao ID do PostgreSQL), quando conhecido"
+        },
+        hour_of_week: {
+          bsonType: "int",
+          minimum: -1,
+          maximum: 167,
+          description: "Hora da semana no fuso do imóvel (America/Sao_Paulo): 0 = segunda 00h, 167 = domingo 23h; -1 = documento de estado do dispositivo (regime e CUSUM)"
+        },
+        median: {
+          bsonType: ["double", "null"],
+          description: "Mediana dos litros por janela neste slot"
+        },
+        mad: {
+          bsonType: ["double", "null"],
+          description: "Desvio absoluto mediano (MAD) dos litros por janela neste slot"
+        },
+        ewma_mean: {
+          bsonType: ["double", "null"],
+          description: "Média móvel exponencial (baseline rápido)"
+        },
+        ewma_var: {
+          bsonType: ["double", "null"],
+          description: "Variância móvel exponencial (baseline rápido)"
+        },
+        count: {
+          bsonType: "int",
+          minimum: 0,
+          description: "Quantidade de janelas aceitas no baseline deste slot"
+        },
+        night_floor_lpm: {
+          bsonType: ["double", "null"],
+          description: "Piso de vazão noturna (00h–05h) em litros por minuto"
+        },
+        min_flow_median: {
+          bsonType: ["double", "null"],
+          description: "Mediana da vazão mínima das janelas, usada como piso do regime"
+        },
+        regime_state: {
+          enum: ["NORMAL", "CANDIDATE", "SHIFTED", "RETURNING"],
+          description: "Estado do rastreador de mudança de regime"
+        },
+        regime_since: {
+          bsonType: ["date", "null"],
+          description: "Início do estado de regime atual"
+        },
+        cusum_pos: {
+          bsonType: ["double", "null"],
+          description: "Soma acumulada positiva (Page-Hinkley/CUSUM) para degrau de aumento"
+        },
+        cusum_neg: {
+          bsonType: ["double", "null"],
+          description: "Soma acumulada negativa (Page-Hinkley/CUSUM) para degrau de queda"
+        },
+        last_window_finished_at: {
+          bsonType: ["date", "null"],
+          description: "Fim da última janela processada; janelas mais antigas não alteram o baseline"
+        },
+        config_version: {
+          bsonType: "string",
+          description: "Versão da configuração do detector que gerou o baseline"
+        },
+        updated_at: {
+          bsonType: "date",
+          description: "Última atualização do documento"
+        },
+        slow_ready: {
+          bsonType: "bool",
+          description: "Referência lenta consolidada por promoção, utilizável enquanto o histórico é reconstruído"
+        },
+        samples: {
+          bsonType: "array",
+          items: { bsonType: "double" },
+          description: "Últimos litros por janela aceitos no slot (base da mediana e do MAD)"
+        },
+        rule_state: {
+          bsonType: "object",
+          description: "Contadores das regras no estado do dispositivo (confirmação, encerramento de alerta, direção do regime)"
+        },
+        regime_acc: {
+          bsonType: "object",
+          description: "Soma da hora em andamento usada pelo rastreador de regime"
+        },
+        visit_until: {
+          bsonType: ["date", "null"],
+          description: "Parâmetro opcional e auditável: até quando uma mudança de regime vale como visita declarada"
+        }
+      }
+    }
+  },
+  validationLevel: "moderate"
+});
+
+print("✓ Coleção 'user_hour_baseline' criada (db_delta_app)");
 
 // ─────────────────────────────────────────────────────────────────────────
 // Coleção: chat_sessions

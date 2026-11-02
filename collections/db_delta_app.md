@@ -82,14 +82,20 @@ Registro definitivo de **cada anomalia disparada pela IA** — vazamentos, fluxo
   "alert_type": "vazamento_continuo",
   "triggered_at": "2026-07-16T03:12:00Z",
   "resolved_at": "2026-07-16T08:30:00Z",
-  "severity": "high"
+  "severity": "high",
+  "rule": "continuous_flow",
+  "evidence": { "windows": 8, "lpm_average": 0.4 }
 }
 ```
+
+`rule` e `evidence` são opcionais e preenchidos pelo detector de anomalias do `delta-api-mongo`: `rule` indica qual regra abriu o alerta e `evidence` guarda as leituras e o baseline usados. **Planejado** (ainda não implementado no `delta-api-mongo`): enquanto existir um alerta aberto (`resolved_at: null`) para o mesmo `device_id` e `rule`, o detector não cria outro.
 
 ### Campos válidos: `alert_type`
 
 - `vazamento_continuo` — Fluxo constante detectado (padrão de vazamento)
-- `fluxo_atipico` — Consumo fora da rotina aprendida
+- `fluxo_atipico` — Consumo fora da rotina aprendida (pico acima do normal da hora)
+- `consumo_fora_do_expediente` — Água correndo fora dos turnos de funcionamento de um imóvel comercial
+- `mudanca_padrao` — Mudança de regime confirmada (visita ou novo normal); informativo, severidade `low`
 - `dispositivo_offline` — Aparelho não respondeu há mais de 30 min
 - `leitura_impossivel` — Sensor não consegue fazer leitura confiável
 
@@ -99,6 +105,7 @@ Registro definitivo de **cada anomalia disparada pela IA** — vazamentos, fluxo
 |---|---|---|---|
 | `idx_user_triggered_at_desc` | Composto | `user_id`, `triggered_at` DESC | **Crítico**: tela de notificações |
 | `idx_device_unresolved_alerts` | Parcial | `device_id`, `resolved_at` | Alertas ativos por device |
+| `idx_device_rule_resolved_at` | Composto | `device_id`, `rule`, `resolved_at` | Busca de alertas do detector por regra |
 
 ### Padrões de Query
 
@@ -121,6 +128,98 @@ db.alerts_history.find({
     $lt: ISODate("2026-08-01T00:00:00Z")
   }
 }).sort({ triggered_at: -1 });
+```
+
+---
+
+## Coleção: `user_hour_baseline`
+
+### Descrição
+
+Baseline estatístico de consumo **por dispositivo e hora da semana** (168 slots), que será mantido pelo detector de anomalias do `delta-api-mongo` (**planejado**; a API ainda não grava nesta coleção) a cada janela de consumo gravada. É um estado derivado de `consumption_summary`: pode ser recalculado, mas não deve ser editado à mão. Fica em `db_delta_app` junto de `alerts_history`, e a API grava nele com a role `role_api_service` (CRUD neste banco).
+
+### Ciclo de Vida
+
+- **Retenção**: Permanente
+- **Propósito**: Referência do "normal" de cada medidor para o detector e para a explicação feita pela IA
+- **Frequência de escrita**: Um upsert por janela de 5 minutos por dispositivo (apenas no slot da hora da semana da janela)
+
+### Estrutura
+
+```json
+{
+  "_id": ObjectId("60c72b2f9b1d8b2bad723456"),
+  "device_id": "ESP32-SP-0912",
+  "property_id": 1,
+  "hour_of_week": 32,
+  "median": 14.0,
+  "mad": 4.0,
+  "ewma_mean": 13.5,
+  "ewma_var": 9.0,
+  "count": 21,
+  "night_floor_lpm": 0.0,
+  "min_flow_median": 0.0,
+  "regime_state": "NORMAL",
+  "regime_since": null,
+  "cusum_pos": 0.0,
+  "cusum_neg": 0.0,
+  "last_window_finished_at": "2026-07-14T11:05:00Z",
+  "config_version": "dev-1",
+  "updated_at": "2026-07-14T11:05:00Z"
+}
+```
+
+### Campos
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `device_id` | string | Medidor dono do baseline (a chave usa o dispositivo, não o usuário) |
+| `property_id` | int ou null | Imóvel no PostgreSQL, quando conhecido (referência lógica) |
+| `hour_of_week` | int -1–167 | No fuso do imóvel (`America/Sao_Paulo`): `0` = segunda 00h … `167` = domingo 23h. `-1` é o **documento de estado do dispositivo** (regime e CUSUM valem para o medidor inteiro) |
+| `median`, `mad` | double | Mediana e desvio absoluto mediano dos litros por janela no slot |
+| `ewma_mean`, `ewma_var` | double | Média e variância móveis exponenciais (baseline rápido) |
+| `count` | int | Janelas aceitas no slot; poucos dados significam baseline pouco confiável |
+| `night_floor_lpm`, `min_flow_median` | double | Pisos de vazão usados pelas regras noturna e de regime |
+| `regime_state` | enum | `NORMAL`, `CANDIDATE`, `SHIFTED` ou `RETURNING` |
+| `regime_since` | date | Início do estado de regime atual |
+| `cusum_pos`, `cusum_neg` | double | Somas acumuladas do Page-Hinkley/CUSUM para degrau de aumento e de queda |
+| `last_window_finished_at` | date | Janelas com fim igual ou anterior não alteram o baseline (idempotência) |
+| `config_version` | string | Versão da configuração do detector |
+| `updated_at` | date | Última atualização |
+| `slow_ready` | bool | Referência promovida pode ser usada sem aguardar novas semanas de amostras |
+| `samples` | array de double | Últimos litros por janela aceitos no slot (limitados); base da mediana e do MAD |
+| `rule_state` | objeto | Contadores das regras no documento de estado (confirmação do z-score, encerramento de alerta, direção do regime) |
+| `regime_acc` | objeto | Soma da hora em andamento (litros, esperado, variância, janelas) que vira um resíduo ao fechar a hora |
+| `visit_until` | date ou null | Opcional e auditável: até quando uma mudança de regime vale como visita declarada |
+
+### Índices
+
+| Nome | Tipo | Campos | Justificativa |
+|---|---|---|---|
+| `idx_device_hour_of_week_unique` | **ÚNICO** | `device_id`, `hour_of_week` | Um documento por dispositivo e slot; chave do upsert |
+
+### Padrões de Query
+
+```javascript
+// Detector: baseline do slot da janela atual
+db.user_hour_baseline.findOne({ device_id: "ESP32-SP-0912", hour_of_week: 32 });
+
+// Atualização do slot, idempotente: só altera se a janela for mais nova que a última processada.
+// (o primeiro documento do slot é criado pelo detector com um insert)
+db.user_hour_baseline.updateOne(
+  {
+    device_id: "ESP32-SP-0912",
+    hour_of_week: 32,
+    $or: [
+      { last_window_finished_at: null },
+      { last_window_finished_at: { $lt: ISODate("2026-07-21T11:05:00Z") } }
+    ]
+  },
+  {
+    $set: { median: 14.0, mad: 4.0, last_window_finished_at: ISODate("2026-07-21T11:05:00Z"), updated_at: new Date() },
+    $inc: { count: 1 }
+  }
+);
 ```
 
 ---

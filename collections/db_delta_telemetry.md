@@ -33,13 +33,27 @@ Documento **consolidado e leve**, calculado pelo hardware e enviado diretamente 
   "window_finished_at": "2026-07-17T17:10:00Z",
   "consumption_liters": 14,
   "lpm_average": 2,
-  "anomaly_detected": false
+  "anomaly_detected": false,
+  "anomaly_reasons": [],
+  "detector_version": "dev-1"
 }
 ```
 
+### Campos do detector de anomalias
+
+Serão preenchidos pelo detector do `delta-api-mongo` logo após a gravação da janela (**planejado**: o POST atual ainda grava só os campos básicos de consumo). Todos são opcionais.
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `anomaly_detected` | bool ou null | `true`/`false` é o resultado; `null` significa que a janela não foi avaliada ou que o detector falhou. `null` nunca deve ser lido como "sem vazamento" |
+| `anomaly_reasons` | array de string | Regras que sinalizaram a janela (ex.: `continuous_flow`, `night_floor`, `robust_zscore`) |
+| `anomaly_evidence` | objeto | Leituras, horários e baseline usados na decisão |
+| `detection_error` | string | Motivo da falha; vem junto com `anomaly_detected: null` |
+| `detector_version` | string | Versão do detector e da configuração que avaliou a janela |
+
 ### Contrato de ingestão
 
-O validator exige `device_id` (string), `user_id` (int), `window_started_at` e `window_finished_at` (date), e `consumption_liters` (double). `lpm_average` (double) e `anomaly_detected` (bool) são opcionais. O hardware calcula o consumo; a API valida a identidade do dispositivo, associa o usuário e persiste a janela. A detecção de anomalias ocorre sobre os resumos e não é pré-requisito para a ingestão.
+O validator exige `device_id` (string), `user_id` (int), `window_started_at` e `window_finished_at` (date), e `consumption_liters` (double). `lpm_average` (double) e `anomaly_detected` (bool ou null) são opcionais. O hardware calcula o consumo; a API valida a identidade do dispositivo, associa o usuário e persiste a janela. A detecção de anomalias ocorre sobre os resumos e não é pré-requisito para a ingestão.
 
 As datas dos exemplos representam valores BSON date, não strings armazenadas. Para inserts em mongosh, use `ISODate`, `NumberInt` e `NumberDouble` conforme o tipo exigido. A duração de cinco minutos e a ordem entre início e fim são regras do produtor; o validator atual apenas verifica tipos e campos obrigatórios.
 
@@ -130,3 +144,11 @@ db.device_status.updateOne(
 Uma exportação para Databricks / AWS S3 pode ler as janelas de `consumption_summary` e gerar arquivos Parquet, tabelas Delta Lake e agregações para o PostgreSQL. O fluxo não depende de pulsos brutos nem de expiração em sete dias.
 
 Os scripts deste repositório não implementam esse pipeline. `consumption_summary` permanece sem TTL; exportar dados não remove o histórico operacional automaticamente.
+
+### Pendências duráveis do detector
+
+`detection_status` é opcional: `pending` acompanha o insert da janela com detecção habilitada e `completed`
+é gravado atomicamente com o resultado. Um worker busca as pendências por `window_finished_at` e `_id`,
+usando `idx_detection_pending`. Assim, sobrecarga e reinício não descartam janelas aguardando avaliação.
+Documentos antigos sem esse campo não são reprocessados automaticamente. Operação prevista com uma única
+réplica de detecção; não há garantia de transação distribuída entre o baseline e a janela nos dois clusters.

@@ -54,7 +54,8 @@ checkCollections([
 use("db_delta_app");
 checkCollections([
   { name: "user_preferences", indexes: ["idx_user_id_unique"] },
-  { name: "alerts_history", indexes: ["idx_user_triggered_at_desc", "idx_device_unresolved_alerts"] },
+  { name: "alerts_history", indexes: ["idx_user_triggered_at_desc", "idx_device_unresolved_alerts", "idx_device_rule_resolved_at"] },
+  { name: "user_hour_baseline", indexes: ["idx_device_hour_of_week_unique"] },
   { name: "chat_sessions", indexes: ["idx_user_activity_desc", "idx_user_open_sessions"] },
   { name: "chat_feedback", indexes: ["idx_session_id"] },
   { name: "weather_daily", indexes: ["idx_location_date_unique"] },
@@ -144,11 +145,93 @@ expectMongoError(
   121,
   "alerts_history rejects an alert type outside its documented enum"
 );
+for (const alertType of ["consumo_fora_do_expediente", "mudanca_padrao"]) {
+  appDb.alerts_history.insertOne({
+    device_id: "sonar-test-device",
+    user_id: NumberInt(7),
+    alert_type: alertType,
+    triggered_at: new Date(),
+    resolved_at: null,
+    severity: "medium",
+    rule: "off_hours_flow",
+    evidence: { windows: 3 },
+  });
+}
 const unresolvedIndex = getIndex(appDb.alerts_history, "idx_device_unresolved_alerts");
 assert(
   unresolvedIndex && unresolvedIndex.partialFilterExpression.resolved_at === null,
   "alerts_history limits its active-alert index to unresolved records"
 );
+
+appDb.user_hour_baseline.insertOne({
+  device_id: "sonar-test-device",
+  hour_of_week: NumberInt(10),
+  count: NumberInt(3),
+  median: Double(1.5),
+  mad: Double(0.5),
+  regime_state: "NORMAL",
+  config_version: "test-1",
+  updated_at: new Date(),
+});
+expectMongoError(
+  () => appDb.user_hour_baseline.insertOne({
+    device_id: "sonar-test-device",
+    hour_of_week: NumberInt(10),
+    count: NumberInt(1),
+  }),
+  11000,
+  "user_hour_baseline enforces one baseline per device and hour of week"
+);
+expectMongoError(
+  () => appDb.user_hour_baseline.insertOne({
+    device_id: "sonar-test-device",
+    hour_of_week: NumberInt(168),
+    count: NumberInt(1),
+  }),
+  121,
+  "user_hour_baseline rejects an hour_of_week outside -1..167"
+);
+expectMongoError(
+  () => appDb.user_hour_baseline.insertOne({
+    device_id: "sonar-test-device",
+    hour_of_week: NumberInt(-2),
+    count: NumberInt(1),
+  }),
+  121,
+  "user_hour_baseline rejects an hour_of_week below the device-state slot (-1)"
+);
+// hour_of_week = -1 guarda o estado do dispositivo (regime, CUSUM e acumulador da hora)
+appDb.user_hour_baseline.insertOne({
+  device_id: "sonar-test-device",
+  hour_of_week: NumberInt(-1),
+  count: NumberInt(0),
+  regime_state: "CANDIDATE",
+  rule_state: { direction: NumberInt(1), z_streak: NumberInt(2) },
+  regime_acc: { liters: Double(3.5), windows: Double(4) },
+  samples: [Double(1.5), Double(2)],
+  visit_until: null,
+});
+expectMongoError(
+  () => appDb.user_hour_baseline.insertOne({
+    device_id: "sonar-test-device",
+    hour_of_week: NumberInt(11),
+    count: NumberInt(1),
+    regime_state: "UNKNOWN",
+  }),
+  121,
+  "user_hour_baseline rejects a regime_state outside its documented enum"
+);
+
+telemetryDb.consumption_summary.insertOne({
+  device_id: "sonar-test-device",
+  user_id: NumberInt(7),
+  window_started_at: new Date("2026-10-30T10:05:00Z"),
+  window_finished_at: new Date("2026-10-30T10:10:00Z"),
+  consumption_liters: 1.5,
+  anomaly_detected: null,
+  detection_error: "owner lookup failed",
+  detector_version: "test-1",
+});
 
 const validMessage = {
   role: "user",

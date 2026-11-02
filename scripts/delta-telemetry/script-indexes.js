@@ -60,3 +60,9 @@ db.device_status.createIndex(
 print("✓ Índice ÚNICO criado em device_status (device_id)");
 
 print("✅ Todos os índices foram criados com sucesso!");
+
+// Pendências do detector: busca limitada, em ordem temporal, sem varrer o histórico concluído.
+db.consumption_summary.createIndex(
+  { detection_status: 1, window_finished_at: 1, _id: 1 },
+  { name: "idx_detection_pending", partialFilterExpression: { detection_status: "pending" } }
+);
