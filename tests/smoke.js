@@ -54,7 +54,11 @@ checkCollections([
 use("db_delta_app");
 checkCollections([
   { name: "user_preferences", indexes: ["idx_user_id_unique"] },
-  { name: "alerts_history", indexes: ["idx_user_triggered_at_desc", "idx_device_unresolved_alerts"] },
+  {
+    name: "alerts_history",
+    indexes: ["idx_user_triggered_at_desc", "idx_device_unresolved_alerts",
+      "idx_alerts_dedup_key_unique", "idx_user_severity_triggered_at_desc"],
+  },
   { name: "user_hour_baseline", indexes: ["idx_device_hour_of_week_unique"] },
   { name: "chat_sessions", indexes: ["idx_user_activity_desc", "idx_user_open_sessions"] },
   { name: "chat_feedback", indexes: ["idx_session_id"] },
@@ -145,6 +149,54 @@ expectMongoError(
   121,
   "alerts_history rejects an alert type outside its documented enum"
 );
+// Contrato de alertas: alertas gerais (sem device_id) escritos pela IA ou pelo sistema.
+for (const alertType of ["consumo_acima_esperado", "previsao_ultrapassagem_meta", "limite_ultrapassado",
+  "previsao_conta_disponivel", "tarifa_atualizada", "dica_personalizada"]) {
+  appDb.alerts_history.insertOne({
+    user_id: NumberInt(7),
+    alert_type: alertType,
+    triggered_at: new Date(),
+    resolved_at: null,
+    severity: "low",
+    source: "gluh",
+    dedup_key: `gluh:7:${alertType}:2026-11`,
+    title: "Alerta geral",
+    message: "Texto de apoio",
+  });
+}
+expectMongoError(
+  () => appDb.alerts_history.insertOne({
+    user_id: NumberInt(7),
+    alert_type: "dica_personalizada",
+    triggered_at: new Date(),
+    source: "robot",
+  }),
+  121,
+  "alerts_history rejects a source outside detector, gluh and system"
+);
+expectMongoError(
+  () => appDb.alerts_history.insertOne({
+    user_id: NumberInt(7),
+    alert_type: "dica_personalizada",
+    triggered_at: new Date(),
+    resolved_at: null,
+    source: "gluh",
+    dedup_key: "gluh:7:dica_personalizada:2026-11",
+  }),
+  11000,
+  "alerts_history allows only one open alert per dedup_key"
+);
+// Depois de resolvido, a mesma chave pode abrir outro alerta.
+appDb.alerts_history.updateOne({ dedup_key: "gluh:7:dica_personalizada:2026-11" }, { $set: { resolved_at: new Date() } });
+appDb.alerts_history.insertOne({
+  user_id: NumberInt(7),
+  alert_type: "dica_personalizada",
+  triggered_at: new Date(),
+  resolved_at: null,
+  source: "gluh",
+  dedup_key: "gluh:7:dica_personalizada:2026-11",
+});
+appDb.alerts_history.updateOne({ dedup_key: "gluh:7:limite_ultrapassado:2026-11" }, { $set: { dismissed_at: new Date() } });
 for (const alertType of ["consumo_fora_do_expediente", "mudanca_padrao"]) {
   appDb.alerts_history.insertOne({
     device_id: "sonar-test-device",

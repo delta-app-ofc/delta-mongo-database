@@ -57,10 +57,24 @@ db.alerts_history.insertMany([
     triggered_at: new Date("2026-07-17T14:00:00Z"),
     resolved_at: null,
     severity: "medium"
+  },
+  {
+    user_id: NumberInt(212),
+    property_id: NumberInt(1),
+    alert_type: "previsao_ultrapassagem_meta",
+    triggered_at: new Date("2026-07-17T20:00:00Z"),
+    resolved_at: null,
+    dismissed_at: null,
+    severity: "medium",
+    source: "gluh",
+    dedup_key: "gluh:212:previsao_ultrapassagem_meta:2026-07",
+    title: "Previsão de ultrapassagem de meta",
+    message: "Ritmo atual projeta 108% da meta até o fim do mês",
+    evidence: { projected_percent: Double(108), period: "2026-07" }
   }
 ]);
 
-print("✓ 2 documentos inseridos em alerts_history");
+print("✓ 3 documentos inseridos em alerts_history");
 
 // ─────────────────────────────────────────────────────────────────────────
 // Seed: user_hour_baseline
