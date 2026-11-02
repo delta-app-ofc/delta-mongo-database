@@ -108,6 +108,13 @@ telemetryDb.consumption_summary.insertOne({
   lpm_average: 0.3,
   anomaly_detected: false,
 });
+// O hardware não envia user_id: a janela sem esse campo precisa ser aceita.
+telemetryDb.consumption_summary.insertOne({
+  device_id: "sonar-test-device",
+  window_started_at: new Date("2026-10-30T09:55:00Z"),
+  window_finished_at: new Date("2026-10-30T10:00:00Z"),
+  consumption_liters: 1.5,
+});
 expectMongoError(
   () => telemetryDb.consumption_summary.insertOne({
     device_id: "sonar-test-device",
