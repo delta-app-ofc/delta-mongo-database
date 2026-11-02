@@ -35,6 +35,8 @@ db.createCollection("consumption_summary", {
           bsonType: "string",
           description: "Identificador do dispositivo"
         },
+        user_ids: { bsonType: "array", items: { bsonType: "int" } },
+        property_id: { bsonType: "int" },
         user_id: { 
           bsonType: "int",
           description: "ID do usuário dono do dispositivo (referência para PostgreSQL)"

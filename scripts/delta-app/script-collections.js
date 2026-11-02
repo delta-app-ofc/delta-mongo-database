@@ -237,6 +237,9 @@ db.createCollection("user_hour_baseline", {
           bsonType: "date",
           description: "Última atualização do documento"
         },
+        cohort_key: { bsonType: ["string", "null"] },
+        visit_updated_by: { bsonType: ["int", "null"] },
+        visit_updated_at: { bsonType: ["date", "null"] },
         slow_ready: {
           bsonType: "bool",
           description: "Referência lenta consolidada por promoção, utilizável enquanto o histórico é reconstruído"

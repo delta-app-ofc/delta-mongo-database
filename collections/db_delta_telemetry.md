@@ -152,3 +152,18 @@ Os scripts deste repositório não implementam esse pipeline. `consumption_summa
 usando `idx_detection_pending`. Assim, sobrecarga e reinício não descartam janelas aguardando avaliação.
 Documentos antigos sem esse campo não são reprocessados automaticamente. Operação prevista com uma única
 réplica de detecção; não há garantia de transação distribuída entre o baseline e a janela nos dois clusters.
+
+## Contexto de propriedade na ingestão
+
+A API resolve o dispositivo na API Postgres antes de persistir. `user_id` continua
+obrigatório: recebe o menor ID entre os usuários vinculados, por compatibilidade.
+`user_ids` (array de int, opcional) preserva todos os usuários autorizados;
+`property_id` (int, opcional) identifica o imóvel. Esses campos vêm do serviço SQL,
+nunca do payload do hardware. Ausência de cadastro retorna 404; serviço de vínculo
+indisponível retorna 503, sem gravar uma janela sem proprietário.
+
+Índices adicionais: `idx_consumption_users_time` para usuários de imóvel compartilhado,
+`idx_consumption_summary_device_start` para a série de evidências e
+`idx_consumption_summary_device_window_uq` único em dispositivo/início/fim.
+O índice único já existente em dispositivo/início continua mais restritivo; não é removido.
+Uma instalação com duplicados precisa ser auditada antes de criar índices únicos.

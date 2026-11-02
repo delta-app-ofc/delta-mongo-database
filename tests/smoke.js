@@ -59,7 +59,7 @@ checkCollections([
     indexes: ["idx_user_triggered_at_desc", "idx_device_unresolved_alerts", "idx_device_rule_resolved_at",
       "idx_alerts_dedup_key_unique", "idx_user_severity_triggered_at_desc"],
   },
-  { name: "user_hour_baseline", indexes: ["idx_device_hour_of_week_unique"] },
+  { name: "user_hour_baseline", indexes: ["idx_device_hour_of_week_unique", "idx_baseline_cohort_hour_count"] },
   { name: "chat_sessions", indexes: ["idx_user_activity_desc", "idx_user_open_sessions"] },
   { name: "chat_feedback", indexes: ["idx_session_id"] },
   { name: "weather_daily", indexes: ["idx_location_date_unique"] },
@@ -337,4 +337,18 @@ expectMongoError(
   "weather_daily enforces one document per location and weather date"
 );
 
+const contextWindow = {
+  device_id: "CONTEXT-SMOKE", user_id: NumberInt(7001), user_ids: [NumberInt(7001), NumberInt(7002)],
+  property_id: NumberInt(701), window_started_at: new Date("2026-11-02T10:00:00Z"),
+  window_finished_at: new Date("2026-11-02T10:05:00Z"), consumption_liters: 0.0
+};
+telemetryDb.consumption_summary.insertOne(contextWindow);
+assert(telemetryDb.consumption_summary.countDocuments({user_ids: NumberInt(7002)}) === 1,
+  "shared property keeps all authorized users");
+expectMongoError(() => telemetryDb.consumption_summary.insertOne({...contextWindow, device_id:"BAD-CONTEXT", user_ids:["not-int"]}),
+  121,"shared user identifiers must be integers");
+appDb.user_hour_baseline.updateOne({device_id:"CONTEXT-SMOKE",hour_of_week:NumberInt(-1)},{$set:{
+  count:NumberInt(0),user_id:NumberInt(7001),cohort_key:"RESIDENCIAL_NORMAL|CASA|1",visit_until:new Date("2026-11-03T00:00:00Z"),
+  visit_updated_by:NumberInt(7001),visit_updated_at:new Date(),config_version:"1",updated_at:new Date()
+}},{upsert:true});
 print("MongoDB local smoke checks passed.");

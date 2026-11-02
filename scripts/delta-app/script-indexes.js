@@ -217,3 +217,5 @@ db.observability_requests.createIndex(
 print("✓ Índice composto parcial criado em observability_requests (user_hash + created_at DESC)");
 
 print("✅ Todos os índices foram criados com sucesso!");
+
+db.user_hour_baseline.createIndex({cohort_key:1,hour_of_week:1,count:1},{name:"idx_baseline_cohort_hour_count"});

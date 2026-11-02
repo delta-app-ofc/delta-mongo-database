@@ -66,3 +66,10 @@ db.consumption_summary.createIndex(
   { detection_status: 1, window_finished_at: 1, _id: 1 },
   { name: "idx_detection_pending", partialFilterExpression: { detection_status: "pending" } }
 );
+
+// Mesmo contrato de idempotência da API (não remove documentos conflitantes automaticamente).
+db.consumption_summary.createIndex({device_id:1,window_started_at:1,window_finished_at:1},
+  {unique:true,name:"idx_consumption_summary_device_window_uq"});
+db.consumption_summary.createIndex({device_id:1,window_started_at:-1,_id:-1},
+  {name:"idx_consumption_summary_device_start"});
+db.consumption_summary.createIndex({user_ids:1,window_started_at:-1},{name:"idx_consumption_users_time"});

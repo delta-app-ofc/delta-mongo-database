@@ -636,3 +636,15 @@ db.observability_requests.aggregate([
   { $group: { _id: "$user_hash", questions: { $sum: 1 } } }
 ]);
 ```
+
+## Contexto de coorte e visita no baseline
+
+`user_hour_baseline` aceita `cohort_key` (string ou null), calculada pelo cadastro
+SQL como classificação + tipo do imóvel + região. O índice
+`idx_baseline_cohort_hour_count` cobre coorte/hora/count. Sem perfil comparável,
+o detector aguarda histórico próprio, sem recorrer a todos os dispositivos.
+
+O documento de estado (`hour_of_week=-1`) guarda `visit_until` e a auditoria
+`visit_updated_by` (int ou null) e `visit_updated_at` (date ou null).
+A rota autenticada de declaração permite até 90 dias e aceita null para cancelar.
+Visita não desativa a detecção de fluxo contínuo nem do piso noturno.
