@@ -12,7 +12,7 @@ Scripts de criação e configuração das coleções MongoDB do Projeto Delta.
 ## Modelo atual
 
 - **Telemetria:** `consumption_summary` recebe diretamente o consumo consolidado pelo hardware, com retenção permanente; `device_status` mantém um documento por dispositivo.
-- **Aplicativo:** `user_preferences`, `alerts_history`, `chat_sessions`, `chat_feedback`, `weather_daily` e `observability_requests`.
+- **Aplicativo:** `user_preferences`, `alerts_history`, `user_hour_baseline`, `chat_sessions`, `chat_feedback`, `weather_daily` e `observability_requests`.
 - **Clima:** `weather_daily` agrupa até 24 observações horárias por localização e dia, com `weather_date` e `wind_speed_mps`.
 
 Consulte [telemetria](collections/db_delta_telemetry.md), [aplicativo e clima](collections/db_delta_app.md) e [Quick Start](QUICK_START.md).
