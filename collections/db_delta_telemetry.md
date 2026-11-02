@@ -41,7 +41,7 @@ Documento **consolidado e leve**, calculado pelo hardware e enviado diretamente 
 
 ### Campos do detector de anomalias
 
-Preenchidos pelo detector do `delta-api-mongo` logo após a gravação da janela. Todos são opcionais.
+Serão preenchidos pelo detector do `delta-api-mongo` logo após a gravação da janela (**planejado**: o POST atual ainda grava só os campos básicos de consumo). Todos são opcionais.
 
 | Campo | Tipo | Descrição |
 |---|---|---|

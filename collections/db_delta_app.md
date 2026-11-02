@@ -88,7 +88,7 @@ Registro definitivo de **cada anomalia disparada pela IA** — vazamentos, fluxo
 }
 ```
 
-`rule` e `evidence` são opcionais e preenchidos pelo detector de anomalias do `delta-api-mongo`: `rule` indica qual regra abriu o alerta e `evidence` guarda as leituras e o baseline usados. Enquanto existir um alerta aberto (`resolved_at: null`) para o mesmo `device_id` e `rule`, o detector não cria outro.
+`rule` e `evidence` são opcionais e preenchidos pelo detector de anomalias do `delta-api-mongo`: `rule` indica qual regra abriu o alerta e `evidence` guarda as leituras e o baseline usados. **Planejado** (ainda não implementado no `delta-api-mongo`): enquanto existir um alerta aberto (`resolved_at: null`) para o mesmo `device_id` e `rule`, o detector não cria outro.
 
 ### Campos válidos: `alert_type`
 
@@ -133,7 +133,7 @@ db.alerts_history.find({
 
 ### Descrição
 
-Baseline estatístico de consumo **por dispositivo e hora da semana** (168 slots), mantido pelo detector de anomalias do `delta-api-mongo` a cada janela de consumo gravada. É um estado derivado de `consumption_summary`: pode ser recalculado, mas não deve ser editado à mão. Fica em `db_delta_app` junto de `alerts_history`, e a API grava nele com a role `role_api_service` (CRUD neste banco).
+Baseline estatístico de consumo **por dispositivo e hora da semana** (168 slots), que será mantido pelo detector de anomalias do `delta-api-mongo` (**planejado**; a API ainda não grava nesta coleção) a cada janela de consumo gravada. É um estado derivado de `consumption_summary`: pode ser recalculado, mas não deve ser editado à mão. Fica em `db_delta_app` junto de `alerts_history`, e a API grava nele com a role `role_api_service` (CRUD neste banco).
 
 ### Ciclo de Vida
 
@@ -160,9 +160,9 @@ Baseline estatístico de consumo **por dispositivo e hora da semana** (168 slots
   "regime_since": null,
   "cusum_pos": 0.0,
   "cusum_neg": 0.0,
-  "last_window_finished_at": "2026-07-17T08:05:00Z",
+  "last_window_finished_at": "2026-07-14T08:05:00Z",
   "config_version": "dev-1",
-  "updated_at": "2026-07-17T08:05:00Z"
+  "updated_at": "2026-07-14T08:05:00Z"
 }
 ```
 
@@ -172,7 +172,7 @@ Baseline estatístico de consumo **por dispositivo e hora da semana** (168 slots
 |---|---|---|
 | `device_id` | string | Medidor dono do baseline (a chave usa o dispositivo, não o usuário) |
 | `property_id` | int ou null | Imóvel no PostgreSQL, quando conhecido (referência lógica) |
-| `hour_of_week` | int 0–167 | `0` = segunda 00h … `167` = domingo 23h |
+| `hour_of_week` | int 0–167 | `0` = segunda 00h … `167` = domingo 23h (UTC) |
 | `median`, `mad` | double | Mediana e desvio absoluto mediano dos litros por janela no slot |
 | `ewma_mean`, `ewma_var` | double | Média e variância móveis exponenciais (baseline rápido) |
 | `count` | int | Janelas aceitas no slot; poucos dados significam baseline pouco confiável |
@@ -196,11 +196,18 @@ Baseline estatístico de consumo **por dispositivo e hora da semana** (168 slots
 // Detector: baseline do slot da janela atual
 db.user_hour_baseline.findOne({ device_id: "ESP32-SP-0912", hour_of_week: 32 });
 
-// Atualização do slot (upsert)
+// Atualização do slot, idempotente: só altera se a janela for mais nova que a última processada.
+// (o primeiro documento do slot é criado pelo detector com um insert)
 db.user_hour_baseline.updateOne(
-  { device_id: "ESP32-SP-0912", hour_of_week: 32 },
-  { $set: { median: 14.0, mad: 4.0, updated_at: new Date() }, $inc: { count: 1 } },
-  { upsert: true }
+  {
+    device_id: "ESP32-SP-0912",
+    hour_of_week: 32,
+    last_window_finished_at: { $lt: ISODate("2026-07-21T08:05:00Z") }
+  },
+  {
+    $set: { median: 14.0, mad: 4.0, last_window_finished_at: ISODate("2026-07-21T08:05:00Z"), updated_at: new Date() },
+    $inc: { count: 1 }
+  }
 );
 ```
 
