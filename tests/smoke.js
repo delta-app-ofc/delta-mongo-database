@@ -54,7 +54,7 @@ checkCollections([
 use("db_delta_app");
 checkCollections([
   { name: "user_preferences", indexes: ["idx_user_id_unique"] },
-  { name: "alerts_history", indexes: ["idx_user_triggered_at_desc", "idx_device_unresolved_alerts"] },
+  { name: "alerts_history", indexes: ["idx_user_triggered_at_desc", "idx_device_unresolved_alerts", "idx_device_rule_resolved_at"] },
   { name: "user_hour_baseline", indexes: ["idx_device_hour_of_week_unique"] },
   { name: "chat_sessions", indexes: ["idx_user_activity_desc", "idx_user_open_sessions"] },
   { name: "chat_feedback", indexes: ["idx_session_id"] },

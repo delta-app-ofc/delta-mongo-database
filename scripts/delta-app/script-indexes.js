@@ -61,6 +61,12 @@ db.alerts_history.createIndex(
 
 print("✓ Índice composto PARCIAL criado em alerts_history (device_id + resolved_at para alertas ativos)");
 
+// Consultas por regra do detector: evita varrer todo o histórico para cada janela.
+db.alerts_history.createIndex(
+  { device_id: 1, rule: 1, resolved_at: 1 },
+  { name: "idx_device_rule_resolved_at" }
+);
+
 // ─────────────────────────────────────────────────────────────────────────
 // Coleção: user_hour_baseline
 // ─────────────────────────────────────────────────────────────────────────
