@@ -53,7 +53,7 @@ Serão preenchidos pelo detector do `delta-api-mongo` logo após a gravação da
 
 ### Contrato de ingestão
 
-O validator exige `device_id` (string), `user_id` (int), `window_started_at` e `window_finished_at` (date), e `consumption_liters` (double). `lpm_average` (double) e `anomaly_detected` (bool ou null) são opcionais. O hardware calcula o consumo; a API valida a identidade do dispositivo, associa o usuário e persiste a janela. A detecção de anomalias ocorre sobre os resumos e não é pré-requisito para a ingestão.
+O validator exige `device_id` (string), `window_started_at` e `window_finished_at` (date), e `consumption_liters` (double). `user_id` (int), `lpm_average` (double) e `anomaly_detected` (bool ou null) são opcionais: o hardware não envia `user_id` e um imóvel pode ter vários usuários, então o dono é resolvido pelo cadastro (`device_id` → imóvel → usuários). O hardware calcula o consumo; a API valida a identidade do dispositivo, associa o usuário e persiste a janela. A detecção de anomalias ocorre sobre os resumos e não é pré-requisito para a ingestão.
 
 As datas dos exemplos representam valores BSON date, não strings armazenadas. Para inserts em mongosh, use `ISODate`, `NumberInt` e `NumberDouble` conforme o tipo exigido. A duração de cinco minutos e a ordem entre início e fim são regras do produtor; o validator atual apenas verifica tipos e campos obrigatórios.
 
