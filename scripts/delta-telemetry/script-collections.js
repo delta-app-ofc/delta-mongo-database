@@ -28,7 +28,7 @@ db.createCollection("consumption_summary", {
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["device_id", "window_started_at", "window_finished_at", "consumption_liters"],
+      required: ["device_id", "user_id", "window_started_at", "window_finished_at", "consumption_liters"],
       properties: {
         _id: { bsonType: "objectId" },
         device_id: { 
@@ -37,7 +37,7 @@ db.createCollection("consumption_summary", {
         },
         user_id: { 
           bsonType: "int",
-          description: "Opcional: um imóvel pode ter vários usuários e o hardware não envia este campo; o dono vem do cadastro (device_id -> imóvel -> usuários)"
+          description: "ID do usuário dono do dispositivo (referência para PostgreSQL)"
         },
         window_started_at: { 
           bsonType: "date",
