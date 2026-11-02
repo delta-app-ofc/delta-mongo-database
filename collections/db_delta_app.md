@@ -93,7 +93,9 @@ Registro definitivo de **cada anomalia disparada pela IA** — vazamentos, fluxo
 ### Campos válidos: `alert_type`
 
 - `vazamento_continuo` — Fluxo constante detectado (padrão de vazamento)
-- `fluxo_atipico` — Consumo fora da rotina aprendida
+- `fluxo_atipico` — Consumo fora da rotina aprendida (pico acima do normal da hora)
+- `consumo_fora_do_expediente` — Água correndo fora dos turnos de funcionamento de um imóvel comercial
+- `mudanca_padrao` — Mudança de regime confirmada (visita ou novo normal); informativo, severidade `low`
 - `dispositivo_offline` — Aparelho não respondeu há mais de 30 min
 - `leitura_impossivel` — Sensor não consegue fazer leitura confiável
 
@@ -172,7 +174,7 @@ Baseline estatístico de consumo **por dispositivo e hora da semana** (168 slots
 |---|---|---|
 | `device_id` | string | Medidor dono do baseline (a chave usa o dispositivo, não o usuário) |
 | `property_id` | int ou null | Imóvel no PostgreSQL, quando conhecido (referência lógica) |
-| `hour_of_week` | int 0–167 | `0` = segunda 00h … `167` = domingo 23h (UTC) |
+| `hour_of_week` | int -1–167 | No fuso do imóvel (`America/Sao_Paulo`): `0` = segunda 00h … `167` = domingo 23h. `-1` é o **documento de estado do dispositivo** (regime e CUSUM valem para o medidor inteiro) |
 | `median`, `mad` | double | Mediana e desvio absoluto mediano dos litros por janela no slot |
 | `ewma_mean`, `ewma_var` | double | Média e variância móveis exponenciais (baseline rápido) |
 | `count` | int | Janelas aceitas no slot; poucos dados significam baseline pouco confiável |
@@ -183,6 +185,10 @@ Baseline estatístico de consumo **por dispositivo e hora da semana** (168 slots
 | `last_window_finished_at` | date | Janelas com fim igual ou anterior não alteram o baseline (idempotência) |
 | `config_version` | string | Versão da configuração do detector |
 | `updated_at` | date | Última atualização |
+| `samples` | array de double | Últimos litros por janela aceitos no slot (limitados); base da mediana e do MAD |
+| `rule_state` | objeto | Contadores das regras no documento de estado (confirmação do z-score, encerramento de alerta, direção do regime) |
+| `regime_acc` | objeto | Soma da hora em andamento (litros, esperado, variância, janelas) que vira um resíduo ao fechar a hora |
+| `visit_until` | date ou null | Opcional e auditável: até quando uma mudança de regime vale como visita declarada |
 
 ### Índices
 
