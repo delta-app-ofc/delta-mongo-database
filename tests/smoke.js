@@ -340,7 +340,7 @@ expectMongoError(
 const contextWindow = {
   device_id: "CONTEXT-SMOKE", user_id: NumberInt(7001), user_ids: [NumberInt(7001), NumberInt(7002)],
   property_id: NumberInt(701), window_started_at: new Date("2026-11-02T10:00:00Z"),
-  window_finished_at: new Date("2026-11-02T10:05:00Z"), consumption_liters: 0.0
+  window_finished_at: new Date("2026-11-02T10:05:00Z"), consumption_liters: 1.5
 };
 telemetryDb.consumption_summary.insertOne(contextWindow);
 assert(telemetryDb.consumption_summary.countDocuments({user_ids: NumberInt(7002)}) === 1,
