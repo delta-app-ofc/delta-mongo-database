@@ -15,7 +15,7 @@ db.createRole(
     privileges: [
       {
         resource: { db: "db_delta_telemetry", collection: "" },
-        actions: ["find", "insert", "update"]
+        actions: ["find", "insert", "update", "listIndexes"]
       }
     ],
     roles: []

@@ -233,6 +233,7 @@ Baseline estatístico de consumo **por dispositivo e hora da semana** (168 slots
 | `last_window_finished_at` | date | Janelas com fim igual ou anterior não alteram o baseline (idempotência) |
 | `config_version` | string | Versão da configuração do detector |
 | `updated_at` | date | Última atualização |
+| `slow_ready` | bool | Referência promovida pode ser usada sem aguardar novas semanas de amostras |
 | `samples` | array de double | Últimos litros por janela aceitos no slot (limitados); base da mediana e do MAD |
 | `rule_state` | objeto | Contadores das regras no documento de estado (confirmação do z-score, encerramento de alerta, direção do regime) |
 | `regime_acc` | objeto | Soma da hora em andamento (litros, esperado, variância, janelas) que vira um resíduo ao fechar a hora |

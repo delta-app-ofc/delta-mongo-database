@@ -65,6 +65,10 @@ db.runCommand({
           bsonType: "string",
           description: "Motivo da falha do detector; preenchido junto com anomaly_detected = null"
         },
+        detection_status: {
+          enum: ["pending", "completed"],
+          description: "Pendência durável gravada no mesmo insert da janela; completed após persistir o resultado"
+        },
         detector_version: {
           bsonType: "string",
           description: "Versão do detector e da configuração que avaliou a janela"

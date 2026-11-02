@@ -144,3 +144,11 @@ db.device_status.updateOne(
 Uma exportação para Databricks / AWS S3 pode ler as janelas de `consumption_summary` e gerar arquivos Parquet, tabelas Delta Lake e agregações para o PostgreSQL. O fluxo não depende de pulsos brutos nem de expiração em sete dias.
 
 Os scripts deste repositório não implementam esse pipeline. `consumption_summary` permanece sem TTL; exportar dados não remove o histórico operacional automaticamente.
+
+### Pendências duráveis do detector
+
+`detection_status` é opcional: `pending` acompanha o insert da janela com detecção habilitada e `completed`
+é gravado atomicamente com o resultado. Um worker busca as pendências por `window_finished_at` e `_id`,
+usando `idx_detection_pending`. Assim, sobrecarga e reinício não descartam janelas aguardando avaliação.
+Documentos antigos sem esse campo não são reprocessados automaticamente. Operação prevista com uma única
+réplica de detecção; não há garantia de transação distribuída entre o baseline e a janela nos dois clusters.

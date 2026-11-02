@@ -237,6 +237,10 @@ db.createCollection("user_hour_baseline", {
           bsonType: "date",
           description: "Última atualização do documento"
         },
+        slow_ready: {
+          bsonType: "bool",
+          description: "Referência lenta consolidada por promoção, utilizável enquanto o histórico é reconstruído"
+        },
         samples: {
           bsonType: "array",
           items: { bsonType: "double" },
