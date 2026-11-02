@@ -8,6 +8,7 @@ if mongosh --quiet mongodb://mongo:27017 --file /scripts/delta-telemetry/script-
   && mongosh --quiet mongodb://mongo:27017 --file /scripts/delta-app/script-collections.js \
   && mongosh --quiet mongodb://mongo:27017 --file /scripts/delta-telemetry/script-migrate-anomaly-fields.js \
   && mongosh --quiet mongodb://mongo:27017 --file /scripts/delta-app/script-migrate-alert-types.js \
+  && mongosh --quiet mongodb://mongo:27017 --file /tests/upgrade.js \
   && mongosh --quiet mongodb://mongo:27017 --file /scripts/delta-telemetry/script-indexes.js \
   && mongosh --quiet mongodb://mongo:27017 --file /scripts/delta-app/script-indexes.js \
   && mongosh --quiet mongodb://mongo:27017 --file /tests/smoke.js; then
