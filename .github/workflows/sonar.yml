@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   tests:
-    name: Testes de integração MongoDB
+    name: Testes Sonar
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -32,7 +32,7 @@ jobs:
         run: docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from runner
       - name: Parar os serviços desta execução
         if: always()
-        run: docker compose -f docker-compose.test.yml down --remove-orphans
+        run: docker compose -f docker-compose.test.yml down --remove-orphans || echo "::warning::Falha ao parar os serviços do ambiente MongoDB de Sonar."
       - name: Publicar relatório JUnit
         if: always()
         uses: actions/upload-artifact@v4
