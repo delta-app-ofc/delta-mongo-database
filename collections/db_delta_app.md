@@ -64,7 +64,7 @@ db.user_preferences.updateOne(
 
 ### Descrição
 
-Registro definitivo de **cada anomalia disparada pela IA** — vazamentos, fluxo anômalo, dispositivo offline. É a fonte de dados que o app renderiza na tela de notificações do usuário.
+Registro definitivo dos **alertas do usuário**: anomalias do detector (vazamento, pico, fora do expediente, mudança de padrão) e alertas gerados pela IA (previsão e limite de meta, consumo acima do esperado, previsão da conta, dicas) ou pelo sistema (tarifa atualizada). Todos ficam na mesma coleção, aparecem na mesma tela e são distinguidos por `source`. É a fonte de dados que o app renderiza na tela de notificações do usuário.
 
 ### Ciclo de Vida
 
@@ -84,11 +84,43 @@ Registro definitivo de **cada anomalia disparada pela IA** — vazamentos, fluxo
   "resolved_at": "2026-07-16T08:30:00Z",
   "severity": "high",
   "rule": "continuous_flow",
-  "evidence": { "windows": 8, "lpm_average": 0.4 }
+  "evidence": { "windows": 8, "lpm_average": 0.4 },
+  "property_id": 1,
+  "source": "detector",
+  "dedup_key": "detector:ESP32-SP-0912:continuous_flow:212",
+  "title": "Possível vazamento",
+  "message": "Fluxo contínuo de 0,4 L/min há 40 min sem pausa",
+  "dismissed_at": null
 }
 ```
 
-`rule` e `evidence` são opcionais e preenchidos pelo detector de anomalias do `delta-api-mongo`: `rule` indica qual regra abriu o alerta e `evidence` guarda as leituras e o baseline usados. **Planejado** (ainda não implementado no `delta-api-mongo`): enquanto existir um alerta aberto (`resolved_at: null`) para o mesmo `device_id` e `rule`, o detector não cria outro.
+### Campos
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `user_id` | int | Sim | Usuário notificado (ID do PostgreSQL) |
+| `alert_type` | string (enum) | Sim | Ver a tabela de tipos abaixo |
+| `triggered_at` | date | Sim | Abertura do alerta |
+| `device_id` | string | Não | Dispositivo de origem; alertas gerais (meta, conta, dica) não têm |
+| `property_id` | int ou null | Não | Imóvel do alerta (ID do PostgreSQL), usado para mostrar o nome da unidade |
+| `severity` | enum | Não | `high` = Crítico, `medium` = Atenção, `low` = Informativo |
+| `title`, `message` | string | Não | Texto exibido na tela (até 120 e 500 caracteres) |
+| `source` | enum | Não | `detector` (delta-api-mongo), `gluh` (IA) ou `system` |
+| `rule` | string | Não | Regra do detector que abriu o alerta |
+| `evidence` | objeto | Não | Números da detecção: valor, base de comparação, %, período, L/min, duração, litros/dia estimados |
+| `resolved_at` | date ou null | Não | Quando a condição cessou; nulo enquanto o alerta está aberto |
+| `dismissed_at` | date ou null | Não | Quando o usuário dispensou o alerta (botão X) |
+| `dedup_key` | string | Não | Chave de deduplicação (ver abaixo) |
+
+### Deduplicação
+
+Só pode existir **um alerta aberto** (`resolved_at` nulo) por `dedup_key`; o banco garante isso com o índice único parcial `idx_alerts_dedup_key_unique`. Depois de resolvido, a mesma chave pode abrir outro alerta. Padrão das chaves:
+
+- detector: `detector:{device_id}:{rule}:{user_id}`
+- IA: `gluh:{user_id}:{tipo}:{período}`, por exemplo `gluh:212:previsao_ultrapassagem_meta:2026-11`
+- sistema: `system:{tipo}:{período}`
+
+`rule` e `evidence` são preenchidos pelo detector de anomalias do `delta-api-mongo`: `rule` indica qual regra abriu o alerta e `evidence` guarda as leituras e o baseline usados. A IA escreve em `alerts_history` apenas pelo endpoint interno do `delta-api-mongo`, nunca direto no banco.
 
 ### Campos válidos: `alert_type`
 
@@ -96,6 +128,12 @@ Registro definitivo de **cada anomalia disparada pela IA** — vazamentos, fluxo
 - `fluxo_atipico` — Consumo fora da rotina aprendida (pico acima do normal da hora)
 - `consumo_fora_do_expediente` — Água correndo fora dos turnos de funcionamento de um imóvel comercial
 - `mudanca_padrao` — Mudança de regime confirmada (visita ou novo normal); informativo, severidade `low`
+- `consumo_acima_esperado` — Consumo acima da média histórica do usuário (IA)
+- `previsao_ultrapassagem_meta` — Ritmo atual projeta passar da meta (IA)
+- `limite_ultrapassado` — Meta de consumo ultrapassada (IA); único tipo da IA que pode ter severidade `high`
+- `previsao_conta_disponivel` — Estimativa da conta já pode ser consultada (IA)
+- `tarifa_atualizada` — A concessionária reajustou a tarifa (sistema ou IA)
+- `dica_personalizada` — Dica baseada nos hábitos cadastrados (IA)
 - `dispositivo_offline` — Aparelho não respondeu há mais de 30 min
 - `leitura_impossivel` — Sensor não consegue fazer leitura confiável
 
@@ -106,6 +144,8 @@ Registro definitivo de **cada anomalia disparada pela IA** — vazamentos, fluxo
 | `idx_user_triggered_at_desc` | Composto | `user_id`, `triggered_at` DESC | **Crítico**: tela de notificações |
 | `idx_device_unresolved_alerts` | Parcial | `device_id`, `resolved_at` | Alertas ativos por device |
 | `idx_device_rule_resolved_at` | Composto | `device_id`, `rule`, `resolved_at` | Busca de alertas do detector por regra |
+| `idx_alerts_dedup_key_unique` | **ÚNICO PARCIAL** | `dedup_key` (filtro: `dedup_key` string e `resolved_at` nulo) | Um alerta aberto por chave de deduplicação |
+| `idx_user_severity_triggered_at_desc` | Composto | `user_id`, `severity`, `triggered_at` DESC | Filtro da tela por severidade (Todos, Crítico, Atenção, Informativo) |
 
 ### Padrões de Query
 
@@ -114,6 +154,13 @@ Registro definitivo de **cada anomalia disparada pela IA** — vazamentos, fluxo
 db.alerts_history.find({
   user_id: 212
 }).sort({ triggered_at: -1 }).limit(20);
+
+// App: alertas de uma severidade que o usuário ainda não dispensou
+db.alerts_history.find({
+  user_id: 212,
+  severity: "high",
+  dismissed_at: null
+}).sort({ triggered_at: -1 });
 
 // Alertas ainda ativos (não resolvidos)
 db.alerts_history.find({
