@@ -61,6 +61,12 @@ db.alerts_history.createIndex(
 
 print("✓ Índice composto PARCIAL criado em alerts_history (device_id + resolved_at para alertas ativos)");
 
+// Consultas por regra do detector: evita varrer todo o histórico para cada janela.
+db.alerts_history.createIndex(
+  { device_id: 1, rule: 1, resolved_at: 1 },
+  { name: "idx_device_rule_resolved_at" }
+);
+
 // Índice único parcial: dedup_key (alertas abertos)
 // Justificativa: garante, no banco, um único alerta aberto por chave de deduplicação, mesmo com
 // escritas simultâneas do detector e da IA. Alertas resolvidos não entram no índice.

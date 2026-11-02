@@ -143,6 +143,7 @@ Só pode existir **um alerta aberto** (`resolved_at` nulo) por `dedup_key`; o ba
 |---|---|---|---|
 | `idx_user_triggered_at_desc` | Composto | `user_id`, `triggered_at` DESC | **Crítico**: tela de notificações |
 | `idx_device_unresolved_alerts` | Parcial | `device_id`, `resolved_at` | Alertas ativos por device |
+| `idx_device_rule_resolved_at` | Composto | `device_id`, `rule`, `resolved_at` | Busca de alertas do detector por regra |
 | `idx_alerts_dedup_key_unique` | **ÚNICO PARCIAL** | `dedup_key` (filtro: `dedup_key` string e `resolved_at` nulo) | Um alerta aberto por chave de deduplicação |
 | `idx_user_severity_triggered_at_desc` | Composto | `user_id`, `severity`, `triggered_at` DESC | Filtro da tela por severidade (Todos, Crítico, Atenção, Informativo) |
 
@@ -209,9 +210,9 @@ Baseline estatístico de consumo **por dispositivo e hora da semana** (168 slots
   "regime_since": null,
   "cusum_pos": 0.0,
   "cusum_neg": 0.0,
-  "last_window_finished_at": "2026-07-14T08:05:00Z",
+  "last_window_finished_at": "2026-07-14T11:05:00Z",
   "config_version": "dev-1",
-  "updated_at": "2026-07-14T08:05:00Z"
+  "updated_at": "2026-07-14T11:05:00Z"
 }
 ```
 
@@ -255,10 +256,13 @@ db.user_hour_baseline.updateOne(
   {
     device_id: "ESP32-SP-0912",
     hour_of_week: 32,
-    last_window_finished_at: { $lt: ISODate("2026-07-21T08:05:00Z") }
+    $or: [
+      { last_window_finished_at: null },
+      { last_window_finished_at: { $lt: ISODate("2026-07-21T11:05:00Z") } }
+    ]
   },
   {
-    $set: { median: 14.0, mad: 4.0, last_window_finished_at: ISODate("2026-07-21T08:05:00Z"), updated_at: new Date() },
+    $set: { median: 14.0, mad: 4.0, last_window_finished_at: ISODate("2026-07-21T11:05:00Z"), updated_at: new Date() },
     $inc: { count: 1 }
   }
 );

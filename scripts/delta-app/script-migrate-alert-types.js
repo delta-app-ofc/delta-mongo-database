@@ -104,6 +104,10 @@ db.alerts_history.createIndex(
   }
 );
 db.alerts_history.createIndex(
+  { device_id: 1, rule: 1, resolved_at: 1 },
+  { name: "idx_device_rule_resolved_at" }
+);
+db.alerts_history.createIndex(
   { user_id: 1, severity: 1, triggered_at: -1 },
   { name: "idx_user_severity_triggered_at_desc" }
 );

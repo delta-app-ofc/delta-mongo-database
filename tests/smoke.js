@@ -56,7 +56,7 @@ checkCollections([
   { name: "user_preferences", indexes: ["idx_user_id_unique"] },
   {
     name: "alerts_history",
-    indexes: ["idx_user_triggered_at_desc", "idx_device_unresolved_alerts",
+    indexes: ["idx_user_triggered_at_desc", "idx_device_unresolved_alerts", "idx_device_rule_resolved_at",
       "idx_alerts_dedup_key_unique", "idx_user_severity_triggered_at_desc"],
   },
   { name: "user_hour_baseline", indexes: ["idx_device_hour_of_week_unique"] },

@@ -34,7 +34,23 @@ mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/
 mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/delta-app/script-roles.js
 ```
 
-### 2.2 Inserir Dados de Teste (Opcional)
+### 2.2 Atualizar uma instalação existente
+
+`createCollection` não atualiza validadores existentes. Antes de habilitar o detector,
+execute as migrações com a credencial administrativa no cluster de cada banco:
+
+```bash
+mongosh "$MONGO_TELEMETRY_ADMIN_URI" --file scripts/delta-telemetry/script-migrate-anomaly-fields.js
+mongosh "$MONGO_APP_ADMIN_URI" --file scripts/delta-app/script-migrate-alert-types.js
+mongosh "$MONGO_APP_ADMIN_URI" --file scripts/delta-app/script-indexes.js
+```
+
+As migrações preservam documentos e podem ser repetidas. Não execute o seed em produção.
+Confira o índice único `(device_id, hour_of_week)` de `user_hour_baseline` e o índice
+`(device_id, rule, resolved_at)` de `alerts_history` antes de ligar o detector.
+A API apenas verifica os índices; a conta de serviço não precisa de `createIndex`.
+
+### 2.3 Inserir Dados de Teste (Opcional)
 
 ```bash
 # Para validar que tudo está funcionando:
@@ -46,7 +62,7 @@ mongosh "mongodb+srv://admin:PASSWORD@cluster.mongodb.net/admin" --file scripts/
 # - db_delta_app.weather_daily: 1 doc
 ```
 
-### 2.3 Criar Usuários (Manual via Atlas UI)
+### 2.4 Criar Usuários (Manual via Atlas UI)
 
 No Atlas UI → Database → Security → Database Users → Add New Database User:
 
