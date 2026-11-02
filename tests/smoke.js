@@ -55,6 +55,7 @@ use("db_delta_app");
 checkCollections([
   { name: "user_preferences", indexes: ["idx_user_id_unique"] },
   { name: "alerts_history", indexes: ["idx_user_triggered_at_desc", "idx_device_unresolved_alerts"] },
+  { name: "user_hour_baseline", indexes: ["idx_device_hour_of_week_unique"] },
   { name: "chat_sessions", indexes: ["idx_user_activity_desc", "idx_user_open_sessions"] },
   { name: "chat_feedback", indexes: ["idx_session_id"] },
   { name: "weather_daily", indexes: ["idx_location_date_unique"] },
@@ -149,6 +150,56 @@ assert(
   unresolvedIndex && unresolvedIndex.partialFilterExpression.resolved_at === null,
   "alerts_history limits its active-alert index to unresolved records"
 );
+
+appDb.user_hour_baseline.insertOne({
+  device_id: "sonar-test-device",
+  hour_of_week: NumberInt(10),
+  count: NumberInt(3),
+  median: Double(1.5),
+  mad: Double(0.5),
+  regime_state: "NORMAL",
+  config_version: "test-1",
+  updated_at: new Date(),
+});
+expectMongoError(
+  () => appDb.user_hour_baseline.insertOne({
+    device_id: "sonar-test-device",
+    hour_of_week: NumberInt(10),
+    count: NumberInt(1),
+  }),
+  11000,
+  "user_hour_baseline enforces one baseline per device and hour of week"
+);
+expectMongoError(
+  () => appDb.user_hour_baseline.insertOne({
+    device_id: "sonar-test-device",
+    hour_of_week: NumberInt(168),
+    count: NumberInt(1),
+  }),
+  121,
+  "user_hour_baseline rejects an hour_of_week outside 0-167"
+);
+expectMongoError(
+  () => appDb.user_hour_baseline.insertOne({
+    device_id: "sonar-test-device",
+    hour_of_week: NumberInt(11),
+    count: NumberInt(1),
+    regime_state: "UNKNOWN",
+  }),
+  121,
+  "user_hour_baseline rejects a regime_state outside its documented enum"
+);
+
+telemetryDb.consumption_summary.insertOne({
+  device_id: "sonar-test-device",
+  user_id: NumberInt(7),
+  window_started_at: new Date("2026-10-30T10:05:00Z"),
+  window_finished_at: new Date("2026-10-30T10:10:00Z"),
+  consumption_liters: 1.5,
+  anomaly_detected: null,
+  detection_error: "owner lookup failed",
+  detector_version: "test-1",
+});
 
 const validMessage = {
   role: "user",

@@ -63,6 +63,53 @@ db.alerts_history.insertMany([
 print("✓ 2 documentos inseridos em alerts_history");
 
 // ─────────────────────────────────────────────────────────────────────────
+// Seed: user_hour_baseline
+// ─────────────────────────────────────────────────────────────────────────
+
+db.user_hour_baseline.insertMany([
+  {
+    device_id: "ESP32-SP-0912",
+    property_id: NumberInt(1),
+    hour_of_week: NumberInt(3),
+    median: Double(0),
+    mad: Double(0),
+    ewma_mean: Double(0.05),
+    ewma_var: Double(0.01),
+    count: NumberInt(21),
+    night_floor_lpm: Double(0),
+    min_flow_median: Double(0),
+    regime_state: "NORMAL",
+    regime_since: null,
+    cusum_pos: Double(0),
+    cusum_neg: Double(0),
+    last_window_finished_at: new Date("2026-07-17T03:05:00Z"),
+    config_version: "dev-1",
+    updated_at: new Date("2026-07-17T03:05:00Z")
+  },
+  {
+    device_id: "ESP32-SP-0912",
+    property_id: NumberInt(1),
+    hour_of_week: NumberInt(32),
+    median: Double(14),
+    mad: Double(4),
+    ewma_mean: Double(13.5),
+    ewma_var: Double(9),
+    count: NumberInt(21),
+    night_floor_lpm: Double(0),
+    min_flow_median: Double(0),
+    regime_state: "NORMAL",
+    regime_since: null,
+    cusum_pos: Double(0),
+    cusum_neg: Double(0),
+    last_window_finished_at: new Date("2026-07-17T08:05:00Z"),
+    config_version: "dev-1",
+    updated_at: new Date("2026-07-17T08:05:00Z")
+  }
+]);
+
+print("✓ 2 documentos inseridos em user_hour_baseline");
+
+// ─────────────────────────────────────────────────────────────────────────
 // Seed: chat_sessions
 // ─────────────────────────────────────────────────────────────────────────
 

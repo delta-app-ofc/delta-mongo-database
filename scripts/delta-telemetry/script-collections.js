@@ -55,9 +55,26 @@ db.createCollection("consumption_summary", {
           bsonType: "double",
           description: "Vazão média em litros por minuto"
         },
-        anomaly_detected: { 
-          bsonType: "bool",
-          description: "Flag setada pela IA para anomalias"
+        anomaly_detected: {
+          bsonType: ["bool", "null"],
+          description: "Resultado do detector: true/false, ou null quando não foi avaliada ou houve erro"
+        },
+        anomaly_reasons: {
+          bsonType: "array",
+          items: { bsonType: "string" },
+          description: "Regras que sinalizaram a anomalia (ex.: continuous_flow, night_floor, robust_zscore)"
+        },
+        anomaly_evidence: {
+          bsonType: "object",
+          description: "Evidências da detecção (leituras, horários e baseline usado)"
+        },
+        detection_error: {
+          bsonType: "string",
+          description: "Motivo da falha do detector; preenchido junto com anomaly_detected = null"
+        },
+        detector_version: {
+          bsonType: "string",
+          description: "Versão do detector e da configuração que avaliou a janela"
         }
       }
     }

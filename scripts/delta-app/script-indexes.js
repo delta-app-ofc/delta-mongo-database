@@ -62,6 +62,20 @@ db.alerts_history.createIndex(
 print("✓ Índice composto PARCIAL criado em alerts_history (device_id + resolved_at para alertas ativos)");
 
 // ─────────────────────────────────────────────────────────────────────────
+// Coleção: user_hour_baseline
+// ─────────────────────────────────────────────────────────────────────────
+
+// Índice único: device_id + hour_of_week
+// Justificativa: Garante um documento por dispositivo e slot da semana (168 slots)
+// e serve de chave para o upsert do detector a cada janela de consumo.
+db.user_hour_baseline.createIndex(
+  { device_id: 1, hour_of_week: 1 },
+  { unique: true, name: "idx_device_hour_of_week_unique" }
+);
+
+print("✓ Índice único criado em user_hour_baseline (device_id + hour_of_week)");
+
+// ─────────────────────────────────────────────────────────────────────────
 // Coleção: chat_sessions
 // ─────────────────────────────────────────────────────────────────────────
 

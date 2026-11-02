@@ -33,13 +33,27 @@ Documento **consolidado e leve**, calculado pelo hardware e enviado diretamente 
   "window_finished_at": "2026-07-17T17:10:00Z",
   "consumption_liters": 14,
   "lpm_average": 2,
-  "anomaly_detected": false
+  "anomaly_detected": false,
+  "anomaly_reasons": [],
+  "detector_version": "dev-1"
 }
 ```
 
+### Campos do detector de anomalias
+
+Preenchidos pelo detector do `delta-api-mongo` logo após a gravação da janela. Todos são opcionais.
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `anomaly_detected` | bool ou null | `true`/`false` é o resultado; `null` significa que a janela não foi avaliada ou que o detector falhou. `null` nunca deve ser lido como "sem vazamento" |
+| `anomaly_reasons` | array de string | Regras que sinalizaram a janela (ex.: `continuous_flow`, `night_floor`, `robust_zscore`) |
+| `anomaly_evidence` | objeto | Leituras, horários e baseline usados na decisão |
+| `detection_error` | string | Motivo da falha; vem junto com `anomaly_detected: null` |
+| `detector_version` | string | Versão do detector e da configuração que avaliou a janela |
+
 ### Contrato de ingestão
 
-O validator exige `device_id` (string), `user_id` (int), `window_started_at` e `window_finished_at` (date), e `consumption_liters` (double). `lpm_average` (double) e `anomaly_detected` (bool) são opcionais. O hardware calcula o consumo; a API valida a identidade do dispositivo, associa o usuário e persiste a janela. A detecção de anomalias ocorre sobre os resumos e não é pré-requisito para a ingestão.
+O validator exige `device_id` (string), `user_id` (int), `window_started_at` e `window_finished_at` (date), e `consumption_liters` (double). `lpm_average` (double) e `anomaly_detected` (bool ou null) são opcionais. O hardware calcula o consumo; a API valida a identidade do dispositivo, associa o usuário e persiste a janela. A detecção de anomalias ocorre sobre os resumos e não é pré-requisito para a ingestão.
 
 As datas dos exemplos representam valores BSON date, não strings armazenadas. Para inserts em mongosh, use `ISODate`, `NumberInt` e `NumberDouble` conforme o tipo exigido. A duração de cinco minutos e a ordem entre início e fim são regras do produtor; o validator atual apenas verifica tipos e campos obrigatórios.
 
