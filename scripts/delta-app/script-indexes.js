@@ -61,6 +61,29 @@ db.alerts_history.createIndex(
 
 print("✓ Índice composto PARCIAL criado em alerts_history (device_id + resolved_at para alertas ativos)");
 
+// Índice único parcial: dedup_key (alertas abertos)
+// Justificativa: garante, no banco, um único alerta aberto por chave de deduplicação, mesmo com
+// escritas simultâneas do detector e da IA. Alertas resolvidos não entram no índice.
+db.alerts_history.createIndex(
+  { dedup_key: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { dedup_key: { $type: "string" }, resolved_at: null },
+    name: "idx_alerts_dedup_key_unique"
+  }
+);
+
+print("✓ Índice ÚNICO PARCIAL criado em alerts_history (dedup_key para alertas abertos)");
+
+// Índice composto: user_id + severity + triggered_at (descendente)
+// Justificativa: filtro da tela de alertas por severidade (Todos/Crítico/Atenção/Informativo).
+db.alerts_history.createIndex(
+  { user_id: 1, severity: 1, triggered_at: -1 },
+  { name: "idx_user_severity_triggered_at_desc" }
+);
+
+print("✓ Índice composto criado em alerts_history (user_id + severity + triggered_at DESC)");
+
 // ─────────────────────────────────────────────────────────────────────────
 // Coleção: user_hour_baseline
 // ─────────────────────────────────────────────────────────────────────────
